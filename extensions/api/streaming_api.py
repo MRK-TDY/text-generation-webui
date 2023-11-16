@@ -67,13 +67,13 @@ async def _handle_chat_stream_message(websocket, message):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
-    if generate_params['silero_tts-enable'] == True:
+    if generate_params['silero_tts_enable'] == True:
         print("Silero TTS is enabled.")
         tts_script.params.update({
-            "speaker": generate_params['silero_tts-speaker'],
-            "language": generate_params['silero_tts-language'],
-            "voice_pitch": generate_params['silero_tts-voice_pitch'],
-            "voice_speed": generate_params['silero_tts-voice_speed'],
+            "speaker": generate_params['silero_tts_speaker'],
+            "language": generate_params['silero_tts_language'],
+            "voice_pitch": generate_params['silero_tts_voice_pitch'],
+            "voice_speed": generate_params['silero_tts_voice_speed'],
         })
 
     generator = generate_chat_reply(
