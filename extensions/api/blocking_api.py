@@ -86,9 +86,9 @@ class Handler(BaseHTTPRequestHandler):
 
             if generate_params['silero_tts_enable'] == True:
                 print("Silero TTS is enabled.")
+                tts_script.language_change(generate_params['silero_tts_language'])
                 tts_script.params.update({
                     "speaker": generate_params['silero_tts_speaker'],
-                    "language": generate_params['silero_tts_language'],
                     "voice_pitch": generate_params['silero_tts_voice_pitch'],
                     "voice_speed": generate_params['silero_tts_voice_speed'],
                 })
