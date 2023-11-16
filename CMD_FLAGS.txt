@@ -1,3 +1,29 @@
 # Only used by the one-click installer.
 # Example:
 # --listen --api
+--listen
+--api
+--auto-devices
+--disk
+--use_fast
+
+--verbose
+
+# --loader values can be transformers, autogptq, gptq-for-llama, exllama, exllama_hf, llamacpp, rwkv, ctransformers
+--loader transformers
+# --model mistralai_Mistral-7B-v0.1
+--model PygmalionAI_pygmalion-6b
+# --lora TodayKnowledgeBase
+
+--gpu-memory 20
+--cpu-memory 8000
+
+--bf16
+--load-in-4bit
+--compute_dtype bfloat16 
+# values can be bfloat16, float16, float32
+--quant_type nf4 
+# values can be nf4, fp4
+--use_double_quant
+
+# --multi-user
