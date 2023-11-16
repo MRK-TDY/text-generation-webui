@@ -17,6 +17,8 @@ from modules.text_generation import (
 from modules.utils import get_available_models
 from modules.logging_colors import logger
 
+from extensions.silero_tts import script as tts_script
+
 
 def get_model_info():
     return {
@@ -81,6 +83,15 @@ class Handler(BaseHTTPRequestHandler):
 
             generate_params = build_parameters(body, chat=True)
             generate_params['stream'] = False
+
+            if generate_params['silero_tts-enable'] == True:
+                print("Silero TTS is enabled.")
+                tts_script.params.update({
+                    "speaker": generate_params['silero_tts-speaker'],
+                    "language": generate_params['silero_tts-language'],
+                    "voice_pitch": generate_params['silero_tts-voice_pitch'],
+                    "voice_speed": generate_params['silero_tts-voice_speed'],
+                })
 
             generator = generate_chat_reply(
                 user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)

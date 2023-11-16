@@ -15,6 +15,8 @@ from modules.chat import generate_chat_reply
 from modules.text_generation import generate_reply
 from modules.logging_colors import logger
 
+from extensions.silero_tts import script as tts_script
+
 PATH = '/api/v1/stream'
 
 
@@ -64,6 +66,15 @@ async def _handle_chat_stream_message(websocket, message):
     generate_params['stream'] = True
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
+
+    if generate_params['silero_tts-enable'] == True:
+        print("Silero TTS is enabled.")
+        tts_script.params.update({
+            "speaker": generate_params['silero_tts-speaker'],
+            "language": generate_params['silero_tts-language'],
+            "voice_pitch": generate_params['silero_tts-voice_pitch'],
+            "voice_speed": generate_params['silero_tts-voice_speed'],
+        })
 
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)

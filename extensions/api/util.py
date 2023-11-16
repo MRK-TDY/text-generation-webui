@@ -59,6 +59,12 @@ def build_parameters(body, chat=False):
         'skip_special_tokens': bool(body.get('skip_special_tokens', True)),
         'custom_stopping_strings': '',  # leave this blank
         'stopping_strings': body.get('stopping_strings', []),
+
+        'silero_tts-enable': bool(body.get('silero_tts-enable', False)),
+        'silero_tts-speaker': body.get('silero_tts-speaker', 'en_56'),
+        'silero_tts-language': body.get('silero_tts-language', 'English'),
+        'silero_tts-voice_pitch': body.get('silero_tts-voice_pitch', 'medium'),
+        'silero_tts-voice_speed': body.get('silero_tts-voice_speed', 'medium'),
     }
 
     preset_name = body.get('preset', 'None')
