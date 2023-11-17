@@ -238,14 +238,22 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
 
     # Generate
     reply = None
+    previous_reply = None
+    cropped_reply = None
+    visible_reply = None
     for j, reply in enumerate(generate_reply(prompt, state, stopping_strings=stopping_strings, is_chat=True)):
 
-        # Extract the reply
-        visible_reply = reply
-        if state['mode'] in ['chat', 'chat-instruct']:
-            visible_reply = re.sub("(<USER>|<user>|{{user}})", state['name1'], reply)
+        if previous_reply is None:
+            visible_reply = reply
+            if state['mode'] in ['chat', 'chat-instruct']:
+                visible_reply = re.sub("(<USER>|<user>|{{user}})", state['name1'], reply)
+            visible_reply = html.escape(visible_reply)
+        else:
+            cropped_reply = reply.replace(previous_reply, "")
 
-        visible_reply = html.escape(visible_reply)
+            visible_reply = visible_reply + cropped_reply
+
+        previous_reply = reply
 
         if shared.stop_everything:
             output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
@@ -262,11 +270,14 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
             output['internal'][-1] = [text, last_reply[0] + reply]
             output['visible'][-1] = [visible_text, last_reply[1] + visible_reply]
             if is_stream:
+                output['visible'][-1][1] = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
                 yield output
         elif not (j == 0 and visible_reply.strip() == ''):
             output['internal'][-1] = [text, reply.lstrip(' ')]
             output['visible'][-1] = [visible_text, visible_reply.lstrip(' ')]
             if is_stream:
+                visible_reply = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
+                output['visible'][-1][1] = visible_reply.lstrip(' ')
                 yield output
 
     output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)

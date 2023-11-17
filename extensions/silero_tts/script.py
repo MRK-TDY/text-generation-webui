@@ -30,6 +30,8 @@ params = {
 
 current_params = params.copy()
 
+last_sentence_index = 0
+
 with open(Path("extensions/silero_tts/languages.json"), encoding='utf8') as f:
     languages = json.load(f)
 
@@ -87,15 +89,18 @@ def state_modifier(state):
     if not params['activate']:
         return state
 
-    state['stream'] = False
+    # state['stream'] = False
     return state
 
 
 def input_modifier(string, state):
+    global last_sentence_index
     if not params['activate']:
         return string
 
-    shared.processing_message = "*Is recording a voice message...*"
+    # shared.processing_message = "*Is recording a voice message...*"
+    
+    last_sentence_index = 0
     return string
 
 
@@ -111,7 +116,9 @@ def history_modifier(history):
 
 
 def output_modifier(string, state):
-    global model, current_params, streaming_state
+    global model, current_params, streaming_state, last_sentence_index
+
+    return string
 
     for i in params:
         if params[i] != current_params[i]:
@@ -145,6 +152,80 @@ def output_modifier(string, state):
     shared.processing_message = "*Is typing...*"
     return string
 
+def output_stream_modifier(string, state):
+    global model, current_params, streaming_state, last_sentence_index
+
+    for i in params:
+        if params[i] != current_params[i]:
+            model = load_model()
+            current_params = params.copy()
+            break
+
+    if not params['activate']:
+        return string
+
+    # unescaped_string = html.unescape(string)
+    unescaped_string = string
+    string_to_voice = ''
+    previous_sentence_index = last_sentence_index
+    while True:
+        sentence, last_sentence_index = get_next_sentence(unescaped_string, last_sentence_index)
+        if sentence is None:
+            break
+
+        string_to_voice += sentence
+        print(f'string_to_voice: {string_to_voice} ({len(string_to_voice)})')
+
+    if (len(string_to_voice) <= 0):
+        return string
+    
+    original_string = string_to_voice
+    string_to_voice = tts_preprocessor.preprocess(string_to_voice)
+
+    if string_to_voice == '':
+        string_to_voice = '*Empty reply, try regenerating*'
+    else:
+        character = "character"
+        if 'character_menu' in state:
+            character = state['character_menu']
+        output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
+        prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
+        silero_input = f'<speak>{prosody}{xmlesc(string_to_voice)}</prosody></speak>'
+        model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+
+        # autoplay = 'autoplay' if params['autoplay'] else ''
+        autoplay = ''
+        string_to_voice = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
+        string_to_voice += f'\n\n{original_string}'
+    
+    relevant_string = string_to_voice + "\n\n"
+    if (previous_sentence_index != 0):
+        relevant_string = unescaped_string[0:previous_sentence_index] + "\n\n" + relevant_string
+        
+    final_string = relevant_string + unescaped_string[last_sentence_index:-1]     
+    last_sentence_index = len(relevant_string)
+    
+    print(f'string: {final_string} ({len(final_string)}); last_sentence_index: {last_sentence_index}\n')
+    return final_string
+
+def get_next_sentence(source, start = 0):
+    sentence_stop = ('...', '.', '?', '!', '!!!', '!!', '??', '?!', '?!?')
+
+    i = start
+    M = max(len(s) for s in sentence_stop)
+    L = len(source)
+
+    while i <= L:
+        m = M
+        while m > 1:
+            chunk = source[i:i + m]
+            if chunk in sentence_stop:
+                return source[start:i + len(chunk)], i + len(chunk)
+            m -= 1
+        else:
+            m = 1
+        i += m
+    return None, start
 
 def setup():
     global model
