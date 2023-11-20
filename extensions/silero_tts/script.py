@@ -205,7 +205,7 @@ def output_stream_modifier(string, state):
     final_string = relevant_string + unescaped_string[last_sentence_index:-1]     
     last_sentence_index = len(relevant_string)
     
-    print(f'string: {final_string} ({len(final_string)}); last_sentence_index: {last_sentence_index}\n')
+    # print(f'string: {final_string} ({len(final_string)}); last_sentence_index: {last_sentence_index}\n')
     return final_string
 
 def get_next_sentence(source, start = 0):
