@@ -1,0 +1,12 @@
+[Unit]
+Description=Start the Dreamia server.
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /PATH/TO/DREAMIA/start_linux.sh
+WorkingDirectory=/PATH/TO/DREAMIA
+StandardOutput=/var/log/dreamia/log1.log
+StandardError=/var/log/dreamia/error1.log
+
+[Install]
+WantedBy=multi-user.target
