@@ -6,7 +6,7 @@ Type=simple
 User=USER
 Group=USER
 ExecStart=/bin/bash /PATH/TO/DREAMIA/start_linux.sh
-WorkingDirectory=/PATH/TO/DREAMIA
+WorkingDirectory=/PATH/TO/DREAMIA/
 
 [Install]
 WantedBy=multi-user.target
