@@ -9,6 +9,8 @@ from typing import Callable, Optional
 from modules import shared
 from modules.chat import load_character_memoized
 from modules.presets import load_preset_memoized
+from modules.chat import load_instruction_template
+from modules.shared import settings
 
 # We use a thread local to store the asyncio lock, so that each thread
 # has its own lock.  This isn't strictly necessary, but it makes it
@@ -79,11 +81,15 @@ def build_parameters(body, chat=False):
         instruction_template = body.get('instruction_template', shared.settings['instruction_template'])
         if str(instruction_template) == "None":
             instruction_template = "Vicuna-v1.1"
+        instruction_template_str = load_instruction_template(instruction_template)
+        
         if str(character) == "None":
             character = "Assistant"
 
-        name1, name2, _, greeting, context, _, _ = load_character_memoized(character, str(body.get('your_name', shared.settings['name1'])), '', instruct=False)
-        name1_instruct, name2_instruct, _, _, context_instruct, turn_template, _ = load_character_memoized(instruction_template, '', '', instruct=True)
+        name1, name2, _, greeting, context = load_character_memoized(character, str(body.get('your_name', shared.settings['name1'])), str(body.get('character', '')))
+        name1_instruct = name1
+        name2_instruct = name2
+        context_instruct = context
         generate_params.update({
             'mode': str(body.get('mode', 'chat')),
             'name1': str(body.get('name1', name1)),
@@ -93,9 +99,11 @@ def build_parameters(body, chat=False):
             'name1_instruct': str(body.get('name1_instruct', name1_instruct)),
             'name2_instruct': str(body.get('name2_instruct', name2_instruct)),
             'context_instruct': str(body.get('context_instruct', context_instruct)),
-            'turn_template': str(body.get('turn_template', turn_template)),
+            'turn_template': str(body.get('turn_template', '')),
             'chat-instruct_command': str(body.get('chat_instruct_command', body.get('chat-instruct_command', shared.settings['chat-instruct_command']))),
-            'history': body.get('history', {'internal': [], 'visible': []})
+            'history': body.get('history', {'internal': [], 'visible': []}),
+            'instruction_template_str': instruction_template_str,
+            'chat_template_str': str(settings['chat_template_str']),
         })
 
     return generate_params
