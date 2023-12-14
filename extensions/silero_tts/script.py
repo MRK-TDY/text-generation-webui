@@ -256,6 +256,26 @@ def voice_preview(string):
     return f'<audio src="file/{output_file.as_posix()}?{int(time.time())}" controls autoplay></audio>'
 
 
+def say_verbatim_tts(string):
+    global model, current_params, streaming_state
+
+    for i in params:
+        if params[i] != current_params[i]:
+            model = load_model()
+            current_params = params.copy()
+            break
+
+    string = tts_preprocessor.preprocess(string or random_sentence())
+
+    character = "character"
+    output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
+    prosody = f"<prosody rate=\"{params['voice_speed']}\" pitch=\"{params['voice_pitch']}\">"
+    silero_input = f'<speak>{prosody}{xmlesc(string)}</prosody></speak>'
+    model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+
+    return f'<audio src="file/{output_file.as_posix()}" controls autoplay></audio>'
+
+
 def language_change(lang):
     global params
     params.update({"language": lang, "speaker": languages[lang]["default_voice"], "model_id": languages[lang]["model_id"]})

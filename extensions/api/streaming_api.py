@@ -75,6 +75,11 @@ async def _handle_chat_stream_message(websocket, message):
             "voice_pitch": generate_params['silero_tts_voice_pitch'],
             "voice_speed": generate_params['silero_tts_voice_speed'],
         })
+    
+    if generate_params['mode'] == "verbatim":
+        print("Verbatim mode is enabled.")
+        await say_verbatim(websocket, user_input, generate_params)
+        return
 
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
@@ -151,3 +156,34 @@ def _run_server(port: int, share: bool = False, tunnel_id=str):
 
 def start_server(port: int, share: bool = False, tunnel_id=str):
     Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True).start()
+
+async def say_verbatim(websocket, user_input, state):
+
+    # user_input is empty
+    sentence = user_input
+    if sentence == "":
+        sentence = "No input."
+    history = state['history']
+
+    sentence_tts = tts_script.say_verbatim_tts(sentence)
+
+    internal = [ "", sentence ]
+    visible = [ "", sentence_tts ]
+
+    history['internal'].append(internal)
+    history['visible'].append(visible)
+
+    message_num = 0
+    await websocket.send(json.dumps({
+        'event': 'text_stream',
+        'message_num': message_num,
+        'history': history
+    }))
+
+    await asyncio.sleep(0)
+    message_num += 1
+
+    await websocket.send(json.dumps({
+        'event': 'stream_end',
+        'message_num': message_num
+    }))
