@@ -112,6 +112,13 @@ def generate_chat_prompt(user_input, state, **kwargs):
     if user_input and not impersonate and not _continue:
         messages.append({"role": "user", "content": user_input})
 
+    def remove_extra_bos(prompt):
+        for bos_token in ['<s>', '<|startoftext|>']:
+            while prompt.startswith(bos_token):
+                prompt = prompt[len(bos_token):]
+
+        return prompt
+
     def make_prompt(messages):
         if state['mode'] == 'chat-instruct' and _continue:
             prompt = renderer(messages=messages[:-1])
@@ -123,6 +130,7 @@ def generate_chat_prompt(user_input, state, **kwargs):
             if state['custom_system_message'].strip() != '':
                 outer_messages.append({"role": "system", "content": state['custom_system_message']})
 
+            prompt = remove_extra_bos(prompt)
             command = state['chat-instruct_command']
             command = command.replace('<|character|>', state['name2'] if not impersonate else state['name1'])
             command = command.replace('<|prompt|>', prompt)
@@ -154,6 +162,7 @@ def generate_chat_prompt(user_input, state, **kwargs):
 
                 prompt += prefix
 
+        prompt = remove_extra_bos(prompt)
         return prompt
 
     prompt = make_prompt(messages)
@@ -211,45 +220,51 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
     output = copy.deepcopy(history)
     output = apply_extensions('history', output)
     state = apply_extensions('state', state)
-    if shared.model_name == 'None' or shared.model is None:
-        logger.error("No model is loaded! Select one in the Model tab.")
-        yield output
-        return
 
-    just_started = True
     visible_text = None
     stopping_strings = get_stopping_strings(state)
     is_stream = state['stream']
 
     # Prepare the input
-    if not any((regenerate, _continue)):
+    if not (regenerate or _continue):
         visible_text = html.escape(text)
 
         # Apply extensions
         text, visible_text = apply_extensions('chat_input', text, visible_text, state)
         text = apply_extensions('input', text, state, is_chat=True)
 
+        output['internal'].append([text, ''])
+        output['visible'].append([visible_text, ''])
+
         # *Is typing...*
         if loading_message:
-            yield {'visible': output['visible'] + [[visible_text, shared.processing_message]], 'internal': output['internal']}
+            yield {
+                'visible': output['visible'][:-1] + [[output['visible'][-1][0], shared.processing_message]],
+                'internal': output['internal']
+            }
     else:
         text, visible_text = output['internal'][-1][0], output['visible'][-1][0]
         if regenerate:
-            output['visible'].pop()
-            output['internal'].pop()
-
-            # *Is typing...*
             if loading_message:
-                yield {'visible': output['visible'] + [[visible_text, shared.processing_message]], 'internal': output['internal']}
+                yield {
+                    'visible': output['visible'][:-1] + [[visible_text, shared.processing_message]],
+                    'internal': output['internal'][:-1] + [[text, '']]
+                }
         elif _continue:
             last_reply = [output['internal'][-1][1], output['visible'][-1][1]]
             if loading_message:
-                yield {'visible': output['visible'][:-1] + [[visible_text, last_reply[1] + '...']], 'internal': output['internal']}
+                yield {
+                    'visible': output['visible'][:-1] + [[visible_text, last_reply[1] + '...']],
+                    'internal': output['internal']
+                }
+
+    if shared.model_name == 'None' or shared.model is None:
+        raise ValueError("No model is loaded! Select one in the Model tab.")
 
     # Generate the prompt
     kwargs = {
         '_continue': _continue,
-        'history': output,
+        'history': output if _continue else {k: v[:-1] for k, v in output.items()}
     }
     prompt = apply_extensions('custom_generate_chat_prompt', text, state, **kwargs)
     if prompt is None:
@@ -278,12 +293,6 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
             output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
             yield output
             return
-
-        if just_started:
-            just_started = False
-            if not _continue:
-                output['internal'].append(['', ''])
-                output['visible'].append(['', ''])
 
         if _continue:
             output['internal'][-1] = [text, last_reply[0] + reply]
