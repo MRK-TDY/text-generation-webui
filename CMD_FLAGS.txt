@@ -11,8 +11,10 @@
 # --loader values can be transformers, autogptq, gptq-for-llama, exllama, exllama_hf, llamacpp, rwkv, ctransformers
 --loader transformers
 # --model mistralai_Mistral-7B-v0.1
---model PygmalionAI_pygmalion-6b
+--model meta-llama_Llama-2-7b-chat-hf
 # --lora TodayKnowledgeBase
+
+--alpha_value 1.5
 
 --gpu-memory 20
 --cpu-memory 8000
