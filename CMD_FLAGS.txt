@@ -4,7 +4,6 @@
 --listen
 --auto-devices
 --disk
---use_fast
 
 --verbose
 
