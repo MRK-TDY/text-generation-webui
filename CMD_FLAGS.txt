@@ -27,3 +27,6 @@
 --use_double_quant
 
 # --multi-user
+
+--gradio-auth mrkite:todaythegame
+--api-key our-api-key

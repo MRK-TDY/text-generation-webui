@@ -4,6 +4,8 @@ import ssl
 from threading import Thread
 
 from websockets.server import serve
+import http
+import urllib.parse
 
 from extensions.api.util import (
     build_parameters,
@@ -116,6 +118,27 @@ async def _handle_connection(websocket, path):
         return
 
 
+def get_query_param(path, key):
+    query = urllib.parse.urlparse(path).query
+    params = urllib.parse.parse_qs(query)
+    values = params.get(key, [])
+    if len(values) == 1:
+        return values[0]
+
+def is_key_valid(key):
+    return bool(key == shared.args.api_key)
+
+async def _handle_process_request(path, request_headers):
+    if not shared.args.api_key:
+        return
+    
+    key = request_headers.get("Authorization", None)
+    if key is None:
+        return http.HTTPStatus.UNAUTHORIZED, [], b"Missing token\n"
+
+    if not is_key_valid(key):
+        return http.HTTPStatus.UNAUTHORIZED, [], b"Invalid token\n"
+
 async def _run(host: str, port: int):
     ssl_certfile = shared.args.ssl_certfile
     ssl_keyfile = shared.args.ssl_keyfile
@@ -126,7 +149,7 @@ async def _run(host: str, port: int):
     else:
         context = None
 
-    async with serve(_handle_connection, host, port, ping_interval=None, ssl=context):
+    async with serve(_handle_connection, host, port, ping_interval=None, ssl=context, process_request=_handle_process_request):
         await asyncio.Future()  # Run the server forever
 
 
