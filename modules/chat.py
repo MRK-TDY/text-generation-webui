@@ -265,7 +265,7 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
     # Generate the prompt
     kwargs = {
         '_continue': _continue,
-        'history': output if _continue else {k: v[:-1] for k, v in output.items()}
+        'history': output,
     }
     prompt = apply_extensions('custom_generate_chat_prompt', text, state, **kwargs)
     if prompt is None:
