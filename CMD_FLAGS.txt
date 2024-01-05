@@ -11,6 +11,7 @@
 --loader transformers
 # --model mistralai_Mistral-7B-v0.1
 --model meta-llama_Llama-2-7b-chat-hf
+# --model openhermes-2.5-mistral-7b
 # --lora TodayKnowledgeBase
 
 --alpha_value 1.5
