@@ -30,6 +30,8 @@ def build_parameters(body, chat=False):
         'temperature_last': bool(body.get('temperature_last', False)),
         'top_p': float(body.get('top_p', 1)),
         'min_p': float(body.get('min_p', 0)),
+        'dynamic_temperature': bool(body.get('dynamic_temperature', False)),
+        'dynamic_temperature_low': float(body.get('dynamic_temperature_low', 0.1)),
         'typical_p': float(body.get('typical_p', body.get('typical', 1))),
         'epsilon_cutoff': float(body.get('epsilon_cutoff', 0)),
         'eta_cutoff': float(body.get('eta_cutoff', 0)),
