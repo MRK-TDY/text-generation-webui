@@ -7,6 +7,8 @@ from websockets.server import serve
 import http
 import urllib.parse
 
+import copy
+
 from extensions.api.util import (
     build_parameters,
     try_start_cloudflared,
@@ -69,6 +71,15 @@ async def _handle_chat_stream_message(websocket, message):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
+    if len(generate_params['Intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
+        # Check if the user input matches any of the intents
+        await check_intent(websocket, user_input, generate_params)
+        if generate_params['history']['TriggeredIntentId']:
+            return
+
+    tts_script.params.update({
+        "activate": generate_params['silero_tts_enable']
+    })
     if generate_params['silero_tts_enable'] == True:
         print("Silero TTS is enabled.")
         tts_script.language_change(generate_params['silero_tts_language'])
@@ -184,7 +195,7 @@ async def say_verbatim(websocket, user_input, state):
 
     # user_input is empty
     sentence = user_input
-    if sentence == "":
+    if not sentence:
         sentence = "No input."
     history = state['history']
 
@@ -195,6 +206,76 @@ async def say_verbatim(websocket, user_input, state):
 
     history['internal'].append(internal)
     history['visible'].append(visible)
+
+    message_num = 0
+    await websocket.send(json.dumps({
+        'event': 'text_stream',
+        'message_num': message_num,
+        'history': history
+    }))
+
+    await asyncio.sleep(0)
+    message_num += 1
+
+    await websocket.send(json.dumps({
+        'event': 'stream_end',
+        'message_num': message_num
+    }))
+
+async def check_intent(websocket, user_input, state):
+    history = state['history']
+    history['TriggeredIntentId'] = ""
+
+    # user_input is empty
+    if not user_input:
+        return
+    
+    # create gen params for intent questioning.
+    generate_params = copy.deepcopy(state)
+    generate_params['mode'] = "instruct"
+    generate_params['history']['internal'] = []
+    generate_params['history']['visible'] = []
+    generate_params['silero_tts_enable'] = False
+
+    tts_script.params.update({
+        "activate": False
+    })
+
+    intents_str = ""
+    for intent in generate_params['Intents']:
+        intents_str += "ID: {id}\n".format(id=intent['Id'])
+        intents_str += "Sentences:\n"
+        for sentence in intent['TrainingPhrases']:
+            intents_str += "- {sentence}\n".format(sentence=sentence)
+        intents_str += "\n"
+    intent_input = ("Assume that there are the following intents composed of IDs and sentences.\n"
+                    "\n"
+                    "\"{intents}\"\n"
+                    "\n"
+                    "Does the following sentence \"{input}\" belongs to one of the intents then say its ID, if not then say \"none\"."
+                    ).format(intents=intents_str, input=user_input)
+    generator = generate_chat_reply(
+            intent_input, generate_params, regenerate=False, _continue=False, loading_message=False)
+
+    message_num = 0
+    answer = ''
+    for a in generator:
+        answer = a
+    
+    tts_script.params.update({
+        "activate": state['silero_tts_enable']
+    })
+    
+    latest_answer = answer['internal'][-1][-1]
+
+    # check if the answer matches any of the intents
+    for intent in generate_params['Intents']:
+        if intent['Id'] in latest_answer:
+            history['TriggeredIntentId'] = intent['Id']
+            break
+
+    if not history['TriggeredIntentId']:
+        return
 
     message_num = 0
     await websocket.send(json.dumps({
