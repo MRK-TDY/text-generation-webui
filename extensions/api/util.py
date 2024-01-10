@@ -84,7 +84,7 @@ def build_parameters(body, chat=False):
         character = body.get('character')
         instruction_template = body.get('instruction_template', shared.settings['instruction_template'])
         if str(instruction_template) == "None":
-            instruction_template = "Vicuna-v1.1"
+            instruction_template = "Llama-v2"
         instruction_template_str = load_instruction_template(instruction_template)
         
         if str(character) == "None":

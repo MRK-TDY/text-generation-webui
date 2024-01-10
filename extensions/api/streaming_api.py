@@ -241,19 +241,23 @@ async def check_intent(websocket, user_input, state):
         "activate": False
     })
 
+    print("Checking for Intents...")
+
     intents_str = ""
     for intent in generate_params['Intents']:
         intents_str += "ID: {id}\n".format(id=intent['Id'])
         intents_str += "Sentences:\n"
         for sentence in intent['TrainingPhrases']:
-            intents_str += "- {sentence}\n".format(sentence=sentence)
-        intents_str += "\n"
-    intent_input = ("Assume that there are the following intents composed of IDs and sentences.\n"
+            intents_str += "- \"{sentence}\"\n".format(sentence=sentence)
+    intent_input = ("Given the following intents composed of IDs and sentences:\n"
                     "\n"
-                    "\"{intents}\"\n"
+                    "{intents}\n"
                     "\n"
-                    "Does the following sentence \"{input}\" belongs to one of the intents then say its ID, if not then say \"none\"."
+                    "Does the following sentence \"{input}\" belong to one of the intents? If yes then say the intent's ID. If not say  \"none\". Answer only with what was requested. Your answer is super short."
                     ).format(intents=intents_str, input=user_input)
+    
+    
+    # print(f"{intent_input}")
     generator = generate_chat_reply(
             intent_input, generate_params, regenerate=False, _continue=False, loading_message=False)
 
@@ -275,7 +279,10 @@ async def check_intent(websocket, user_input, state):
             break
 
     if not history['TriggeredIntentId']:
+        print(f"No intent triggered. Generation: {latest_answer}")
         return
+
+    print(f"Intent match found. Triggering {history['TriggeredIntentId']}. Generation: {latest_answer}")
 
     message_num = 0
     await websocket.send(json.dumps({
