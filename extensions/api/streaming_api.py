@@ -71,10 +71,10 @@ async def _handle_chat_stream_message(websocket, message):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
-    if len(generate_params['Intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
+    if len(generate_params['intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
         await check_intent(websocket, user_input, generate_params)
-        if generate_params['history']['TriggeredIntentId']:
+        if generate_params['history']['triggered_intent_id']:
             return
 
     tts_script.params.update({
@@ -224,7 +224,7 @@ async def say_verbatim(websocket, user_input, state):
 
 async def check_intent(websocket, user_input, state):
     history = state['history']
-    history['TriggeredIntentId'] = ""
+    history['triggered_intent_id'] = ""
 
     # user_input is empty
     if not user_input:
@@ -244,10 +244,10 @@ async def check_intent(websocket, user_input, state):
     print("Checking for Intents...")
 
     intents_str = ""
-    for intent in generate_params['Intents']:
-        intents_str += "ID: {id}\n".format(id=intent['Id'])
+    for intent in state['intents']:
+        intents_str += "ID: {id}\n".format(id=intent['id'])
         intents_str += "Sentences:\n"
-        for sentence in intent['TrainingPhrases']:
+        for sentence in intent['training_phrases']:
             intents_str += "- \"{sentence}\"\n".format(sentence=sentence)
     intent_input = ("Given the following intents composed of IDs and sentences:\n"
                     "\n"
@@ -273,16 +273,16 @@ async def check_intent(websocket, user_input, state):
     latest_answer = answer['internal'][-1][-1]
 
     # check if the answer matches any of the intents
-    for intent in generate_params['Intents']:
-        if intent['Id'] in latest_answer:
-            history['TriggeredIntentId'] = intent['Id']
+    for intent in state['intents']:
+        if intent['id'] in latest_answer:
+            history['triggered_intent_id'] = intent['id']
             break
 
-    if not history['TriggeredIntentId']:
+    if not history['triggered_intent_id']:
         print(f"No intent triggered. Generation: {latest_answer}")
         return
 
-    print(f"Intent match found. Triggering {history['TriggeredIntentId']}. Generation: {latest_answer}")
+    print(f"Intent match found. Triggering {history['triggered_intent_id']}. Generation: {latest_answer}")
 
     message_num = 0
     await websocket.send(json.dumps({

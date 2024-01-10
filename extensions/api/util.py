@@ -74,7 +74,7 @@ def build_parameters(body, chat=False):
         'silero_tts_voice_pitch': body.get('silero_tts_voice_pitch', 'medium'),
         'silero_tts_voice_speed': body.get('silero_tts_voice_speed', 'medium'),
 
-        'Intents': body.get('Intents', []),
+        'intents': body.get('intents', []),
     }
 
     preset_name = body.get('preset', 'None')
