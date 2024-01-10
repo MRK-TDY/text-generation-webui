@@ -284,6 +284,11 @@ async def check_intent(websocket, user_input, state):
 
     print(f"Intent match found. Triggering {history['triggered_intent_id']}. Generation: {latest_answer}")
 
+    # fix history
+    internal = [ user_input, "" ]
+    history['internal'].append(internal)
+    history['visible'].append(internal)
+
     message_num = 0
     await websocket.send(json.dumps({
         'event': 'text_stream',
