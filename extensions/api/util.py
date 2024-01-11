@@ -95,16 +95,17 @@ def build_parameters(body, chat=False):
         name1, name2, _, greeting, context = load_character_memoized(character, str(body.get('your_name', shared.settings['name1'])), str(body.get('character', '')))
         name1_instruct = name1
         name2_instruct = name2
-        context_instruct = context
+        context = str(body.get('context', context))
+        context_instruct = str(body.get('context_instruct', context))
         generate_params.update({
             'mode': str(body.get('mode', 'chat')),
             'name1': str(body.get('name1', name1)),
             'name2': str(body.get('name2', name2)),
-            'context': str(body.get('context', context)),
+            'context': context,
             'greeting': str(body.get('greeting', greeting)),
             'name1_instruct': str(body.get('name1_instruct', name1_instruct)),
             'name2_instruct': str(body.get('name2_instruct', name2_instruct)),
-            'context_instruct': str(body.get('context_instruct', context_instruct)),
+            'context_instruct': context_instruct,
             'turn_template': str(body.get('turn_template', '')),
             'chat-instruct_command': str(body.get('chat_instruct_command', body.get('chat-instruct_command', shared.settings['chat-instruct_command']))),
             'history': body.get('history', {'internal': [], 'visible': []}),
