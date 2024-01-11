@@ -110,6 +110,7 @@ def build_parameters(body, chat=False):
             'history': body.get('history', {'internal': [], 'visible': []}),
             'instruction_template_str': instruction_template_str,
             'chat_template_str': str(settings['chat_template_str']),
+            'custom_system_message': str(body.get('custom_system_message', "Answer the questions given this context: " + context_instruct)),
         })
 
     return generate_params
