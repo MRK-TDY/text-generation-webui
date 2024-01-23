@@ -121,7 +121,7 @@ def save_audio_to_file(state, string_to_voice, original_string):
         character = state['character_menu']
     output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
     prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
-    silero_input = f'<speak>{prosody}{xmlesc(string_to_voice)}</prosody></speak>'
+    silero_input = f'<speak>{prosody}{xmlesc(string_to_voice.lower())}</prosody></speak>'
     model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
 
     # autoplay = 'autoplay' if params['autoplay'] else ''
