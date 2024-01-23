@@ -67,6 +67,7 @@ def build_parameters(body, chat=False):
         'stopping_strings': body.get('stopping_strings', []),
         'custom_system_message': str(body.get('custom_system_message', '')),
         'system_message': str(body.get('system_message', '<|system-message|>')),
+        'prompt_lookup_num_tokens': int(body.get('prompt_lookup_num_tokens', 0)),
 
         'silero_tts_enable': bool(body.get('silero_tts_enable', False)),
         'silero_tts_speaker': body.get('silero_tts_speaker', 'en_56'),
