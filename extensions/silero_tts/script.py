@@ -115,42 +115,49 @@ def history_modifier(history):
     return history
 
 
+def save_audio_to_file(state, string_to_voice, original_string):
+    character = "character"
+    if 'character_menu' in state:
+        character = state['character_menu']
+    output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
+    prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
+    silero_input = f'<speak>{prosody}{xmlesc(string_to_voice)}</prosody></speak>'
+    model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+
+    # autoplay = 'autoplay' if params['autoplay'] else ''
+    autoplay = ''
+    string_to_voice = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
+    string_to_voice += f'\n\n{original_string}'
+
+    return string_to_voice
+
 def output_modifier(string, state):
     global model, current_params, streaming_state, last_sentence_index
+    
+    unsaid_string = string[last_sentence_index::]
 
-    return string
-
-    for i in params:
-        if params[i] != current_params[i]:
-            model = load_model()
-            current_params = params.copy()
-            break
-
-    if not params['activate']:
+    if len(unsaid_string) == 0:
         return string
 
-    original_string = string
+    unescaped_string = string
+    previous_sentence_index = last_sentence_index
 
-    string = tts_preprocessor.preprocess(html.unescape(string))
+    string_to_voice = tts_preprocessor.preprocess(unsaid_string)
 
-    if string == '':
-        string = '*Empty reply, try regenerating*'
+    if string_to_voice == '':
+        string_to_voice = '*Empty reply, try regenerating*'
     else:
-        character = "character"
-        if 'character_menu' in state:
-            character = state['character_menu']
-        output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time())}.wav')
-        prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
-        silero_input = f'<speak>{prosody}{xmlesc(string)}</prosody></speak>'
-        model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+        string_to_voice = save_audio_to_file(state, string_to_voice, unsaid_string)
 
-        autoplay = 'autoplay' if params['autoplay'] else ''
-        string = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
-        if params['show_text']:
-            string += f'\n\n{original_string}'
+    relevant_string = string_to_voice + "\n\n"
+    if previous_sentence_index != 0:
+        relevant_string = unescaped_string[0:previous_sentence_index] + "\n\n" + relevant_string
 
-    shared.processing_message = "*Is typing...*"
-    return string
+    final_string = relevant_string
+    last_sentence_index = len(relevant_string)
+
+    return final_string
+
 
 def output_stream_modifier(string, state):
     global model, current_params, streaming_state, last_sentence_index
@@ -176,35 +183,24 @@ def output_stream_modifier(string, state):
         string_to_voice += sentence
         print(f'string_to_voice: {string_to_voice} ({len(string_to_voice)})')
 
-    if (len(string_to_voice) <= 0):
+    if len(string_to_voice) <= 0:
         return string
-    
+
     original_string = string_to_voice
     string_to_voice = tts_preprocessor.preprocess(string_to_voice)
 
     if string_to_voice == '':
         string_to_voice = '*Empty reply, try regenerating*'
     else:
-        character = "character"
-        if 'character_menu' in state:
-            character = state['character_menu']
-        output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
-        prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
-        silero_input = f'<speak>{prosody}{xmlesc(string_to_voice)}</prosody></speak>'
-        model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+        string_to_voice = save_audio_to_file(state, string_to_voice, original_string)
 
-        # autoplay = 'autoplay' if params['autoplay'] else ''
-        autoplay = ''
-        string_to_voice = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
-        string_to_voice += f'\n\n{original_string}'
-    
     relevant_string = string_to_voice + "\n\n"
-    if (previous_sentence_index != 0):
+    if previous_sentence_index != 0:
         relevant_string = unescaped_string[0:previous_sentence_index] + "\n\n" + relevant_string
-        
-    final_string = relevant_string + unescaped_string[last_sentence_index:-1]     
+
+    final_string = relevant_string + unescaped_string[last_sentence_index:-1]
     last_sentence_index = len(relevant_string)
-    
+
     # print(f'string: {final_string} ({len(final_string)}); last_sentence_index: {last_sentence_index}\n')
     return final_string
 
