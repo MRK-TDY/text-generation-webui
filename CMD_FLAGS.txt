@@ -29,5 +29,5 @@
 
 # --multi-user
 
---gradio-auth mrkite:todaythegame
+# --gradio-auth mrkite:todaythegame
 --api-key our-api-key
