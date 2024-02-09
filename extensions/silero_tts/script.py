@@ -133,6 +133,15 @@ def save_audio_to_file(state, string_to_voice, original_string):
 
 def output_modifier(string, state):
     global model, current_params, streaming_state, last_sentence_index
+
+    for i in params:
+        if params[i] != current_params[i]:
+            model = load_model()
+            current_params = params.copy()
+            break
+
+    if not params['activate']:
+        return string
     
     unsaid_string = string[last_sentence_index::]
 
