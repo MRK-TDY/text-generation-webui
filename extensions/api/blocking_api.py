@@ -1,5 +1,8 @@
+from datetime import datetime
 import json
+import os
 import ssl
+from modules.PalAI.pal_ai import PalAI
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 
@@ -70,6 +73,50 @@ class Handler(BaseHTTPRequestHandler):
                 }]
             })
 
+            self.wfile.write(response.encode('utf-8'))
+
+        elif self.path == '/api/v1/pal/build':
+            pal = PalAI()
+
+            prompt = body['prompt']
+            (system_prompt, prompt) = pal.format_prompt(prompt)
+            generate_params = build_parameters(body)
+            stopping_strings = generate_params.pop('stopping_strings')
+            # generate_params['custom_system_prompt'] = system_prompt
+            prompt = f"[INST]{system_prompt}[\INST]{prompt}"
+            generate_params['stream'] = False
+
+            # Disable silero
+            tts_script.params.update({
+                "activate": False
+            })
+
+            generator = generate_reply(
+                prompt, generate_params, stopping_strings=stopping_strings, is_chat=False)
+            building_data = ''
+            for a in generator:
+                building_data = a
+            result = pal.extract_building_information(building_data)
+
+            response = json.dumps({'message': 'Data processed', 'result': result})
+
+            # Generate an object visualization, this should not be used in prod
+            if body['_visualize']:
+                obj = pal.generate_obj(result)
+                now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                result_path = f"logs/buildings/{now}_building.obj"
+                with open(result_path, 'w') as fptr:
+                    fptr.write(obj)
+                try:
+                    os.startfile(os.path.join(os.curdir, result_path))
+                except Exception as e:
+                    pass
+
+
+            print(response)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
             self.wfile.write(response.encode('utf-8'))
 
         elif self.path == '/api/v1/chat':
