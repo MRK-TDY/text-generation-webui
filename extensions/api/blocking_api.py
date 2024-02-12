@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 import os
 import ssl
-from extensions.PalAI.pal_ai import PalAI
+from modules.PalAI.pal_ai import PalAI
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 
