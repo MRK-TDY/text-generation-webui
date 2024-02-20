@@ -22,6 +22,7 @@ from modules.logging_colors import logger
 from extensions.silero_tts import script as tts_script
 
 import re
+import zlib
 
 PATH = '/api/v1/stream'
 
@@ -107,12 +108,19 @@ async def _handle_chat_stream_message(websocket, message):
         for phrases in a["internal"]:
             for i, phrase in enumerate(phrases):
                 phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+        try:
+            json_obj = json.dumps({
+                'event': 'text_stream',
+                'message_num': message_num,
+                'history': a
+            })
 
-        await websocket.send(json.dumps({
-            'event': 'text_stream',
-            'message_num': message_num,
-            'history': a
-        }))
+            compressed_payload = zlib.compress(json_obj.encode('utf-8'))
+            print(zlib.decompress(compressed_payload).decode('utf-8'))
+
+            await websocket.send(compressed_payload)
+        except Exception as e:
+            print(e)
 
         await asyncio.sleep(0)
         message_num += 1
