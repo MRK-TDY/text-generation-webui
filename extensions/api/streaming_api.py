@@ -23,12 +23,14 @@ from extensions.silero_tts import script as tts_script
 
 import re
 import zlib
+import base64
 
 PATH = '/api/v1/stream'
 
 
 @with_api_lock
 async def _handle_stream_message(websocket, message):
+    message_copy = message
     try:
         message = zlib.decompress(message).decode('utf-8')
         message = json.loads(message)
@@ -37,6 +39,7 @@ async def _handle_stream_message(websocket, message):
         print("Error decompressing message.")
         print(message)
         print(e)
+        message = message_copy
     
 
     prompt = message['prompt']
@@ -75,10 +78,20 @@ async def _handle_stream_message(websocket, message):
 @with_api_lock
 async def _handle_chat_stream_message(websocket, message):
     
+    message_copy = message
     # decompress message
-    message = zlib.decompress(message).decode('utf-8')
-
+    try:
+        # transform message from string to bytes
     body = json.loads(message)
+        message = base64.b64decode(message)
+        message = zlib.decompress(message).decode('utf-8')
+        body = json.loads(message)
+    except Exception as e:
+        print("Error decompressing message.")
+        print(e)
+        message = message_copy
+
+    #body = json.loads(message)
 
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
@@ -126,9 +139,7 @@ async def _handle_chat_stream_message(websocket, message):
                 'message_num': message_num,
                 'history': a
             })
-
             compressed_payload = zlib.compress(json_obj.encode('utf-8'))
-            print(zlib.decompress(compressed_payload).decode('utf-8'))
 
             await websocket.send(compressed_payload)
         except Exception as e:
