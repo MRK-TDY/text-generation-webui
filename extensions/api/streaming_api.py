@@ -29,7 +29,15 @@ PATH = '/api/v1/stream'
 
 @with_api_lock
 async def _handle_stream_message(websocket, message):
-    message = json.loads(message)
+    try:
+        message = zlib.decompress(message).decode('utf-8')
+        message = json.loads(message)
+        print(message)
+    except Exception as e:
+        print("Error decompressing message.")
+        print(message)
+        print(e)
+    
 
     prompt = message['prompt']
     generate_params = build_parameters(message)
@@ -66,6 +74,10 @@ async def _handle_stream_message(websocket, message):
 
 @with_api_lock
 async def _handle_chat_stream_message(websocket, message):
+    
+    # decompress message
+    message = zlib.decompress(message).decode('utf-8')
+
     body = json.loads(message)
 
     user_input = body['user_input']
