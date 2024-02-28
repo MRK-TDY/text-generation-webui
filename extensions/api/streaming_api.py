@@ -82,7 +82,7 @@ async def _handle_chat_stream_message(websocket, message):
     # decompress message
     try:
         # transform message from string to bytes
-    body = json.loads(message)
+        print("Recieved compressed message: " + message)
         message = base64.b64decode(message)
         message = zlib.decompress(message).decode('utf-8')
         body = json.loads(message)
@@ -90,8 +90,7 @@ async def _handle_chat_stream_message(websocket, message):
         print("Error decompressing message.")
         print(e)
         message = message_copy
-
-    #body = json.loads(message)
+        body = json.loads(message)
 
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
@@ -117,10 +116,10 @@ async def _handle_chat_stream_message(websocket, message):
             "voice_speed": generate_params['silero_tts_voice_speed'],
         })
     
-    if generate_params['mode'] == "verbatim":
-        print("Verbatim mode is enabled.")
-        await say_verbatim(websocket, user_input, generate_params)
-        return
+    ##if generate_params['mode'] == "verbatim":
+    ##    print("Verbatim mode is enabled.")
+    ##    await say_verbatim(websocket, user_input, generate_params)
+    ##    return
 
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
@@ -139,7 +138,7 @@ async def _handle_chat_stream_message(websocket, message):
                 'message_num': message_num,
                 'history': a
             })
-            compressed_payload = zlib.compress(json_obj.encode('utf-8'))
+            compressed_payload = base64.b64encode(zlib.compress(json_obj.encode('utf-8')))
 
             await websocket.send(compressed_payload)
         except Exception as e:
