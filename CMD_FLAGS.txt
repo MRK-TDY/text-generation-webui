@@ -31,3 +31,5 @@
 
 # --gradio-auth mrkite:todaythegame
 --api-key our-api-key
+
+--elevenlabs_api_key ELEVENLABS_KEY
