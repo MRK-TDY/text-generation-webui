@@ -80,17 +80,21 @@ async def _handle_chat_stream_message(websocket, message):
             return
 
     tts_script.params.update({
-        "activate": generate_params['silero_tts_enable']
+        "tts_mode": generate_params['tts_mode']
     })
-    if generate_params['silero_tts_enable'] == True:
-        print("Silero TTS is enabled.")
+    if generate_params['tts_mode'] in tts_script.tts_modes and generate_params['tts_mode'] != 'off':
+        if generate_params['tts_mode'] == 'silero':
+            print("Silero TTS is enabled.")
+        elif generate_params['tts_mode'] == 'elevenlabs':
+            print("Elevenlabs TTS is enabled.")
         tts_script.language_change(generate_params['silero_tts_language'])
         tts_script.params.update({
             "speaker": generate_params['silero_tts_speaker'],
             "voice_pitch": generate_params['silero_tts_voice_pitch'],
             "voice_speed": generate_params['silero_tts_voice_speed'],
+            "elevenlabs_speaker": generate_params['elevenlabs_speaker'],
         })
-    
+
     if generate_params['mode'] == "verbatim":
         print("Verbatim mode is enabled.")
         await say_verbatim(websocket, user_input, generate_params)
@@ -247,7 +251,7 @@ async def check_intent(websocket, user_input, state):
     generate_params['silero_tts_enable'] = False
 
     tts_script.params.update({
-        "activate": False
+        "tts_mode": "off"
     })
 
     print("Checking for Intents...")
@@ -276,7 +280,7 @@ async def check_intent(websocket, user_input, state):
         answer = a
     
     tts_script.params.update({
-        "activate": state['silero_tts_enable']
+        "tts_mode": state['tts_mode']
     })
     
     latest_answer = answer['internal'][-1][-1]

@@ -199,6 +199,9 @@ group.add_argument('--api-key', type=str, default='', help='API authentication k
 group.add_argument('--admin-key', type=str, default='', help='API authentication key for admin tasks like loading and unloading models. If not set, will be the same as --api-key.')
 group.add_argument('--nowebui', action='store_true', help='Do not launch the Gradio UI. Useful for launching the API in standalone mode.')
 
+# ElevenLabs
+group.add_argument('--elevenlabs_api_key', type=str, default='', help='API key for the Eleven Labs API.')
+
 # API (not OpenAI compatible)
 parser.add_argument('--api-blocking-port', type=int, default=5000)
 parser.add_argument('--api-streaming-port', type=int, default=5005)

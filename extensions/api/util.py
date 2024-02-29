@@ -71,11 +71,13 @@ def build_parameters(body, chat=False):
         'system_message': str(body.get('system_message', '<|system-message|>')),
         'prompt_lookup_num_tokens': int(body.get('prompt_lookup_num_tokens', 0)),
 
-        'silero_tts_enable': bool(body.get('silero_tts_enable', False)),
-        'silero_tts_speaker': body.get('silero_tts_speaker', 'en_56'),
-        'silero_tts_language': body.get('silero_tts_language', 'English'),
-        'silero_tts_voice_pitch': body.get('silero_tts_voice_pitch', 'medium'),
-        'silero_tts_voice_speed': body.get('silero_tts_voice_speed', 'medium'),
+        'tts_mode': str(body.get('tts_mode', 'silero')),
+        'silero_tts_speaker': str(body.get('silero_tts_speaker', 'en_56')),
+        'silero_tts_language': str(body.get('silero_tts_language', 'English')),
+        'silero_tts_voice_pitch': str(body.get('silero_tts_voice_pitch', 'medium')),
+        'silero_tts_voice_speed': str(body.get('silero_tts_voice_speed', 'medium')),
+        'elevenlabs_speaker': str(body.get('elevenlabs_speaker', 'Alice')),
+    
 
         'intents': body.get('intents', []),
     }

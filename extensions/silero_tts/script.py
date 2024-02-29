@@ -6,6 +6,7 @@ from pathlib import Path
 
 import gradio as gr
 import torch
+import elevenlabs
 
 from extensions.silero_tts import tts_preprocessor
 from modules import chat, shared, ui_chat
@@ -14,9 +15,54 @@ from modules.utils import gradio
 torch._C._jit_set_profiling_mode(False)
 
 
+tts_modes = ['elevenlabs', 'silero', 'off']
+
+elevenlabs_voices = [
+    'Rachel',
+    'Clyde',
+    'Domi',
+    'Dave',
+    'Fin',
+    'Bella',
+    'Antoni',
+    'Thomas',
+    'Charlie',
+    'Emily',
+    'Elli',
+    'Callum',
+    'Patrick',
+    'Harry',
+    'Liam',
+    'Dorothy',
+    'Josh',
+    'Arnold',
+    'Charlotte',
+    'Matilda',
+    'Matthew',
+    'James',
+    'Joseph',
+    'Jeremy',
+    'Michael',
+    'Ethan',
+    'Gigi',
+    'Freya',
+    'Grace',
+    'Daniel',
+    'Serena',
+    'Adam',
+    'Nicole',
+    'Jessie',
+    'Ryan',
+    'Sam',
+    'Glinda',
+    'Giovanni',
+    'Mimi',
+]
+
 params = {
-    'activate': True,
+    'tts_mode': "elevenlabs", # "elevenlabs", "silero", or "off"
     'speaker': 'en_56',
+    'elevenlabs_speaker': 'Adam',
     'language': 'English',
     'model_id': 'v3_en',
     'sample_rate': 48000,
@@ -86,7 +132,7 @@ def toggle_text_in_history(history):
 
 
 def state_modifier(state):
-    if not params['activate']:
+    if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return state
 
     # state['stream'] = False
@@ -95,7 +141,7 @@ def state_modifier(state):
 
 def input_modifier(string, state):
     global last_sentence_index
-    if not params['activate']:
+    if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
 
     # shared.processing_message = "*Is recording a voice message...*"
@@ -122,8 +168,15 @@ def save_audio_to_file(state, string_to_voice, original_string):
     output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
     prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
     silero_input = f'<speak>{prosody}{xmlesc(string_to_voice.lower())}</prosody></speak>'
-    model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
-
+    if params['tts_mode'] == "elevenlabs":
+        try:
+            audio = elevenlabs.generate(text=string_to_voice, voice=params['elevenlabs_speaker'], api_key=shared.args.elevenlabs_api_key)
+            elevenlabs.save(audio, str(output_file))
+        except Exception as e:
+            print("Error generating audio with Elevenlabs: ", e)
+            model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
+    else:
+        model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
     # autoplay = 'autoplay' if params['autoplay'] else ''
     autoplay = ''
     string_to_voice = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
@@ -140,7 +193,7 @@ def output_modifier(string, state):
             current_params = params.copy()
             break
 
-    if not params['activate']:
+    if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
     
     unsaid_string = string[last_sentence_index::]
@@ -177,13 +230,14 @@ def output_stream_modifier(string, state):
             current_params = params.copy()
             break
 
-    if not params['activate']:
+    if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
 
     # unescaped_string = html.unescape(string)
     unescaped_string = string
     string_to_voice = ''
     previous_sentence_index = last_sentence_index
+
     while True:
         sentence, last_sentence_index = get_next_sentence(unescaped_string, last_sentence_index)
         if sentence is None:
@@ -296,10 +350,13 @@ def ui():
     # Gradio elements
     with gr.Accordion("Silero TTS"):
         with gr.Row():
-            activate = gr.Checkbox(value=params['activate'], label='Activate TTS')
+            tts_mode = gr.Dropdown(value=params['tts_mode'], choices=tts_modes, label='TTS Mode')
             autoplay = gr.Checkbox(value=params['autoplay'], label='Play TTS automatically')
 
         show_text = gr.Checkbox(value=params['show_text'], label='Show message text under audio player')
+        
+        with gr.Row():
+            elevenlabs_speaker = gr.Dropdown(value=params['elevenlabs_speaker'], choices=elevenlabs_voices, label='Elevenlabs Voice')
         
         with gr.Row():
             language = gr.Dropdown(value=params['language'], choices=sorted(languages.keys()), label='Language')
@@ -337,10 +394,11 @@ def ui():
         chat.redraw_html, gradio(ui_chat.reload_arr), gradio('display'))
 
     # Event functions to update the parameters in the backend
-    activate.change(lambda x: params.update({"activate": x}), activate, None)
+    tts_mode.change(lambda x: params.update({"tts_mode": x}), tts_mode, None)
     autoplay.change(lambda x: params.update({"autoplay": x}), autoplay, None)
     language.change(language_change, language, voice, show_progress=False)
     voice.change(lambda x: params.update({"speaker": x}), voice, None)
+    elevenlabs_speaker.change(lambda x: params.update({"elevenlabs_speaker": x}), elevenlabs_speaker, None)
     v_pitch.change(lambda x: params.update({"voice_pitch": x}), v_pitch, None)
     v_speed.change(lambda x: params.update({"voice_speed": x}), v_speed, None)
 

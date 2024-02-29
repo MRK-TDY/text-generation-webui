@@ -3,3 +3,4 @@ num2words
 omegaconf
 pydub
 PyYAML
+elevenlabs==0.3.0b0
