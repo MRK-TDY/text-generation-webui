@@ -34,6 +34,7 @@ def build_parameters(body, chat=False):
         'dynatemp_low': float(body.get('dynatemp_low', 1)),
         'dynatemp_high': float(body.get('dynatemp_high', 1)),
         'dynatemp_exponent': float(body.get('dynatemp_exponent', 1)),
+        'smoothing_factor': float(body.get('smoothing_factor', 0)),
         'typical_p': float(body.get('typical_p', body.get('typical', 1))),
         'epsilon_cutoff': float(body.get('epsilon_cutoff', 0)),
         'eta_cutoff': float(body.get('eta_cutoff', 0)),
@@ -61,6 +62,7 @@ def build_parameters(body, chat=False):
         'add_bos_token': bool(body.get('add_bos_token', True)),
         'truncation_length': int(body.get('truncation_length', body.get('max_context_length', 2048))),
         'custom_token_bans': str(body.get('custom_token_bans', '')),
+        'sampler_priority': body.get('sampler_priority', None),
         'ban_eos_token': bool(body.get('ban_eos_token', False)),
         'skip_special_tokens': bool(body.get('skip_special_tokens', True)),
         'custom_stopping_strings': '',  # leave this blank
