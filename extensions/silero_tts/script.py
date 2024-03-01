@@ -63,7 +63,7 @@ elevenlabs_voices = [
 ]
 
 params = {
-    'tts_mode': "elevenlabs", # "elevenlabs", "silero", or "off"
+    'tts_mode': "silero", # "elevenlabs", "silero", or "off"
     'speaker': 'en_56',
     'elevenlabs_speaker': 'Adam',
     'language': 'English',
