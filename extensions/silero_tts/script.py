@@ -12,6 +12,9 @@ from extensions.silero_tts import tts_preprocessor
 from modules import chat, shared, ui_chat
 from modules.utils import gradio
 
+from os import path
+from pydub import AudioSegment
+
 torch._C._jit_set_profiling_mode(False)
 
 
@@ -170,8 +173,12 @@ def save_audio_to_file(state, string_to_voice, original_string):
     silero_input = f'<speak>{prosody}{xmlesc(string_to_voice.lower())}</prosody></speak>'
     if params['tts_mode'] == "elevenlabs":
         try:
+            elevenlabs_output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.mp3')
             audio = elevenlabs.generate(text=string_to_voice, voice=params['elevenlabs_speaker'], api_key=shared.args.elevenlabs_api_key)
-            elevenlabs.save(audio, str(output_file))
+            elevenlabs.save(audio, str(elevenlabs_output_file)) # mp3 format
+            print(f'Elevenlabs audio saved to {elevenlabs_output_file}')
+            audio = AudioSegment.from_file(elevenlabs_output_file, format="mp3")
+            audio.export(output_file, format="wav")
         except Exception as e:
             print("Error generating audio with Elevenlabs: ", e)
             model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
