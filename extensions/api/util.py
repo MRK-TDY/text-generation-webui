@@ -8,6 +8,7 @@ from typing import Callable, Optional
 
 from modules import shared
 from modules.chat import load_character_memoized
+from modules.chat import replace_character_names
 from modules.presets import load_preset_memoized
 from modules.chat import load_instruction_template
 from modules.shared import settings
@@ -99,26 +100,27 @@ def build_parameters(body, chat=False):
             character = "Assistant"
 
         name1, name2, _, greeting, context = load_character_memoized(character, str(body.get('your_name', shared.settings['name1'])), str(body.get('character', '')))
-        name1_instruct = name1
-        name2_instruct = name2
+        name1 = str(body.get('name1', name1))
+        name2 = str(body.get('name2', name2))
         context = str(body.get('context', context))
-        context_instruct = str(body.get('context_instruct', context))
         generate_params.update({
             'mode': str(body.get('mode', 'chat')),
-            'name1': str(body.get('name1', name1)),
-            'name2': str(body.get('name2', name2)),
+            'name1': name1,
+            'name2': name2,
             'context': context,
             'greeting': str(body.get('greeting', greeting)),
-            'name1_instruct': str(body.get('name1_instruct', name1_instruct)),
-            'name2_instruct': str(body.get('name2_instruct', name2_instruct)),
-            'context_instruct': context_instruct,
-            'turn_template': str(body.get('turn_template', '')),
+            'turn_template': str(body.get('turn_template', '<|user|><|user-message|><|bot|><|bot-message|>')),
             'chat-instruct_command': str(body.get('chat_instruct_command', body.get('chat-instruct_command', shared.settings['chat-instruct_command']))),
             'history': body.get('history', {'internal': [], 'visible': []}),
             'instruction_template_str': instruction_template_str,
             'chat_template_str': str(settings['chat_template_str']),
-            'custom_system_message': str(body.get('custom_system_message', "Answer the questions given this context: " + context_instruct)),
         })
+
+        if body.get('mode', 'chat') == "instruct":
+            context_instruct = replace_character_names(context, name1, name2)
+            generate_params.update({
+                'custom_system_message': str(body.get('custom_system_message', "Given this context:\n\n" + context_instruct + "\n\nAnswer the given question.")),
+            })
 
     return generate_params
 

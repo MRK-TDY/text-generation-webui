@@ -9,9 +9,8 @@
 
 # --loader values can be transformers, autogptq, gptq-for-llama, exllama, exllama_hf, llamacpp, rwkv, ctransformers
 --loader transformers
-# --model mistralai_Mistral-7B-v0.1
---model meta-llama_Llama-2-7b-chat-hf
-# --model openhermes-2.5-mistral-7b
+#--model meta-llama_Llama-2-7b-chat-hf
+--model meta-llama_Llama-2-13b-chat-hf
 # --lora TodayKnowledgeBase
 
 --alpha_value 1.5
@@ -26,6 +25,8 @@
 --quant_type nf4 
 # values can be nf4, fp4
 --use_double_quant
+
+--use_flash_attention_2
 
 # --multi-user
 

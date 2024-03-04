@@ -204,6 +204,7 @@ def output_modifier(string, state):
         return string
     
     unsaid_string = string[last_sentence_index::]
+    unsaid_string = unsaid_string.strip()
 
     if len(unsaid_string) == 0:
         return string
