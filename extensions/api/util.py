@@ -35,6 +35,7 @@ def build_parameters(body, chat=False):
         'dynatemp_high': float(body.get('dynatemp_high', 1)),
         'dynatemp_exponent': float(body.get('dynatemp_exponent', 1)),
         'smoothing_factor': float(body.get('smoothing_factor', 0)),
+        'smoothing_curve': float(body.get('smoothing_curve', 1)),
         'typical_p': float(body.get('typical_p', body.get('typical', 1))),
         'epsilon_cutoff': float(body.get('epsilon_cutoff', 0)),
         'eta_cutoff': float(body.get('eta_cutoff', 0)),
