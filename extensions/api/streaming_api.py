@@ -242,13 +242,6 @@ async def check_intent(websocket, user_input, state):
     # user_input is empty
     if not user_input:
         return
-    
-    # create gen params for intent questioning.
-    generate_params = copy.deepcopy(state)
-    generate_params['mode'] = "instruct"
-    generate_params['history']['internal'] = []
-    generate_params['history']['visible'] = []
-    generate_params['silero_tts_enable'] = False
 
     tts_script.params.update({
         "tts_mode": "off"
@@ -266,13 +259,40 @@ async def check_intent(websocket, user_input, state):
                     "\n"
                     "{intents}\n"
                     "\n"
-                    "Does the following sentence \"{input}\" belong to one of the intents? If yes then say the intent's ID. If not say  \"none\". Answer only with what was requested. Your answer is super short."
+                    "To which intent is the sentence \"{input}\" more related?\n"
+                    "\n"
+                    "Answer only with the ID or \"none\". No explanation. No other words. Super short response."
                     ).format(intents=intents_str, input=user_input)
     
+    # Add instruction tags
+    intent_input = f"[INST]{intent_input}[/INST]"
+
     
-    # print(f"{intent_input}")
-    generator = generate_chat_reply(
-            intent_input, generate_params, regenerate=False, _continue=False, loading_message=False)
+    
+    # create gen params for intent questioning.
+    generate_params = build_parameters({})
+    generate_params.update({
+        "mode": "instruct",
+        "tts_mode": "off",
+        "stream": False,
+        "max_new_tokens": 100,
+        "temperature": 0.1,
+        "top_p": 0,
+        "min_p": 0,
+        "top_k": 0,
+        "repetition_penalty": 1.5,
+        "presence_penalty": 2,
+        "do_sample": False,
+        # "num_beams": 3,
+        # "length_penalty": -5,
+        # "early_stopping": True,
+        "guidance_scale": 1.5,
+        "negative_prompt": "Long answer. Explain. Based on the given intents. Here's my answer. Sure!",
+    })
+    stopping_strings = generate_params.pop('stopping_strings')
+    generator = generate_reply(
+        intent_input, generate_params, stopping_strings=stopping_strings, is_chat=False)
+    
 
     message_num = 0
     answer = ''
@@ -283,11 +303,18 @@ async def check_intent(websocket, user_input, state):
         "tts_mode": state['tts_mode']
     })
     
-    latest_answer = answer['internal'][-1][-1]
+    # latest_answer = answer['internal'][-1][-1]
+    latest_answer = answer
+
+    def format_intent_id(input: str) -> str:
+        result = input.lower()
+        result = result.replace("_", "")
+        result = result.strip()
+        return result
 
     # check if the answer matches any of the intents
     for intent in state['intents']:
-        if intent['id'] in latest_answer:
+        if format_intent_id(intent['id']) in format_intent_id(latest_answer):
             history['triggered_intent_id'] = intent['id']
             break
 
