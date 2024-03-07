@@ -24,16 +24,16 @@ def build_parameters(body, chat=False):
 
     generate_params = {
         'max_new_tokens': int(body.get('max_new_tokens', body.get('max_length', 250))),
-        'auto_max_new_tokens': bool(body.get('auto_max_new_tokens', False)),
+        'auto_max_new_tokens': bool(body.get('auto_max_new_tokens', True)),
         'max_tokens_second': int(body.get('max_tokens_second', 0)),
         'do_sample': bool(body.get('do_sample', True)),
-        'temperature': float(body.get('temperature', 0.7)),
-        'temperature_last': bool(body.get('temperature_last', False)),
-        'top_p': float(body.get('top_p', 0.9)),
-        'min_p': float(body.get('min_p', 0)),
-        'dynamic_temperature': bool(body.get('dynamic_temperature', False)),
-        'dynatemp_low': float(body.get('dynatemp_low', 1)),
-        'dynatemp_high': float(body.get('dynatemp_high', 1)),
+        'temperature': float(body.get('temperature', 1)),
+        'temperature_last': bool(body.get('temperature_last', True)),
+        'top_p': float(body.get('top_p', 0.8)),
+        'min_p': float(body.get('min_p', 0.3)),
+        'dynamic_temperature': bool(body.get('dynamic_temperature', True)),
+        'dynatemp_low': float(body.get('dynatemp_low', 0.7)),
+        'dynatemp_high': float(body.get('dynatemp_high', 1.5)),
         'dynatemp_exponent': float(body.get('dynatemp_exponent', 1)),
         'smoothing_factor': float(body.get('smoothing_factor', 0)),
         'smoothing_curve': float(body.get('smoothing_curve', 1)),
@@ -54,8 +54,8 @@ def build_parameters(body, chat=False):
         'penalty_alpha': float(body.get('penalty_alpha', 0)),
         'length_penalty': float(body.get('length_penalty', 1)),
         'early_stopping': bool(body.get('early_stopping', False)),
-        'mirostat_mode': int(body.get('mirostat_mode', 0)),
-        'mirostat_tau': float(body.get('mirostat_tau', 5)),
+        'mirostat_mode': int(body.get('mirostat_mode', 2)),
+        'mirostat_tau': float(body.get('mirostat_tau', 8)),
         'mirostat_eta': float(body.get('mirostat_eta', 0.1)),
         'grammar_string': str(body.get('grammar_string', '')),
         'guidance_scale': float(body.get('guidance_scale', 1)),
@@ -69,8 +69,7 @@ def build_parameters(body, chat=False):
         'skip_special_tokens': bool(body.get('skip_special_tokens', True)),
         'custom_stopping_strings': '',  # leave this blank
         'stopping_strings': body.get('stopping_strings', []),
-        'custom_system_message': str(body.get('custom_system_message', '')),
-        'system_message': str(body.get('system_message', '<|system-message|>')),
+        'custom_system_message': str(body.get('custom_system_message', 'Answer the request using very short responses. Use only up to three short sentences.')),
         'prompt_lookup_num_tokens': int(body.get('prompt_lookup_num_tokens', 0)),
 
         'tts_mode': str(body.get('tts_mode', 'silero')),
@@ -119,7 +118,7 @@ def build_parameters(body, chat=False):
         if body.get('mode', 'chat') == "instruct":
             context_instruct = replace_character_names(context, name1, name2)
             generate_params.update({
-                'custom_system_message': str(body.get('custom_system_message', "Given this context:\n\n" + context_instruct + "\n\nAnswer the given question.")),
+                'custom_system_message': "Given this context:\n\n" + context_instruct + "\n\n" + generate_params['custom_system_message'],
             })
 
     return generate_params
