@@ -13,7 +13,8 @@
 --model meta-llama_Llama-2-13b-chat-hf
 # --lora TodayKnowledgeBase
 
---alpha_value 1.5
+--alpha_value 2
+--rope_freq_base 100000
 
 --gpu-memory 20
 --cpu-memory 8000

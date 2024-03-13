@@ -5,17 +5,17 @@ mode: chat-instruct
 chat_style: cai-chat
 prompt-default: QA
 prompt-notebook: QA
-preset: simple-1
+preset: DreamiaPreset
 max_new_tokens: 200
 max_new_tokens_min: 1
 max_new_tokens_max: 4096
 seed: -1
 negative_prompt: ''
-truncation_length: 2048
+truncation_length: 8192
 truncation_length_min: 0
 truncation_length_max: 32768
 custom_stopping_strings: ''
-auto_max_new_tokens: false
+auto_max_new_tokens: true
 max_tokens_second: 0
 ban_eos_token: false
 custom_token_bans: ''
@@ -25,8 +25,9 @@ stream: true
 name1: You
 character: Joyce
 instruction_template: Llama-v2
+custom_system_message: 'Answer the request using very short responses. Use only up to three short sentences.'
 chat-instruct_command: |-
-  Continue the chat dialogue below. Write a single reply acting as the character "<|character|>".
+  Continue the chat dialogue below. Write a single short reply acting as the character "<|character|>".
 
   <|prompt|>
 instruction_template_str: |-

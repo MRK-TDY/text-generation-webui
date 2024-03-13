@@ -1,0 +1,10 @@
+temperature_last: true
+dynamic_temperature: true
+dynatemp_low: 0.7
+dynatemp_high: 1.5
+top_p: 0.8
+min_p: 0.3
+top_k: 40
+repetition_penalty: 1.18
+mirostat_mode: 2
+mirostat_tau: 8
