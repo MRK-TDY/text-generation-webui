@@ -11,7 +11,6 @@ from modules.chat import load_character_memoized
 from modules.chat import replace_character_names
 from modules.presets import load_preset_memoized
 from modules.chat import load_instruction_template
-from modules.shared import settings
 
 # We use a thread local to store the asyncio lock, so that each thread
 # has its own lock.  This isn't strictly necessary, but it makes it
@@ -90,7 +89,7 @@ def build_parameters(body, chat=False):
 
     if chat:
         character = body.get('character')
-        instruction_template = body.get('instruction_template', shared.settings['instruction_template'])
+        instruction_template = body.get('instruction_template', shared.default_settings['instruction_template'])
         if str(instruction_template) == "None":
             instruction_template = "Llama-v2"
         instruction_template_str = load_instruction_template(instruction_template)
@@ -98,7 +97,7 @@ def build_parameters(body, chat=False):
         if str(character) == "None":
             character = "Assistant"
 
-        name1, name2, _, greeting, context = load_character_memoized(character, str(body.get('your_name', shared.settings['name1'])), str(body.get('character', '')))
+        name1, name2, _, greeting, context = load_character_memoized(character, str(body.get('your_name', shared.default_settings['name1'])), str(body.get('character', '')))
         name1 = str(body.get('name1', name1))
         name2 = str(body.get('name2', name2))
         context = str(body.get('context', context))
@@ -109,10 +108,10 @@ def build_parameters(body, chat=False):
             'context': context,
             'greeting': str(body.get('greeting', greeting)),
             'turn_template': str(body.get('turn_template', '<|user|><|user-message|><|bot|><|bot-message|>')),
-            'chat-instruct_command': str(body.get('chat_instruct_command', body.get('chat-instruct_command', shared.settings['chat-instruct_command']))),
+            'chat-instruct_command': str(body.get('chat_instruct_command', body.get('chat-instruct_command', shared.default_settings['chat-instruct_command']))),
             'history': body.get('history', {'internal': [], 'visible': []}),
             'instruction_template_str': instruction_template_str,
-            'chat_template_str': str(settings['chat_template_str']),
+            'chat_template_str': str(shared.default_settings['chat_template_str']),
         })
 
         if body.get('mode', 'chat') == "instruct":

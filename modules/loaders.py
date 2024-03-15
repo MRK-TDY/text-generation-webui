@@ -46,6 +46,8 @@ loaders_and_params = OrderedDict({
         'no_offload_kqv',
         'row_split',
         'tensorcores',
+        'streaming_llm',
+        'attention_sink_size',
     ],
     'llamacpp_HF': [
         'n_ctx',
@@ -69,6 +71,8 @@ loaders_and_params = OrderedDict({
         'no_offload_kqv',
         'row_split',
         'tensorcores',
+        'streaming_llm',
+        'attention_sink_size',
         'llamacpp_HF_info',
     ],
     'ExLlamav2_HF': [
@@ -78,6 +82,7 @@ loaders_and_params = OrderedDict({
         'no_flash_attn',
         'num_experts_per_token',
         'cache_8bit',
+        'cache_4bit',
         'autosplit',
         'alpha_value',
         'compress_pos_emb',
@@ -90,6 +95,7 @@ loaders_and_params = OrderedDict({
         'no_flash_attn',
         'num_experts_per_token',
         'cache_8bit',
+        'cache_4bit',
         'autosplit',
         'alpha_value',
         'compress_pos_emb',

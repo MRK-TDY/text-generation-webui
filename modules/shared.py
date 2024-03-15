@@ -131,6 +131,8 @@ group.add_argument('--logits_all', action='store_true', help='Needs to be set fo
 group.add_argument('--no_offload_kqv', action='store_true', help='Do not offload the  K, Q, V to the GPU. This saves VRAM but reduces the performance.')
 group.add_argument('--cache-capacity', type=str, help='Maximum cache capacity (llama-cpp-python). Examples: 2000MiB, 2GiB. When provided without units, bytes will be assumed.')
 group.add_argument('--row_split', action='store_true', help='Split the model by rows across GPUs. This may improve multi-gpu performance.')
+group.add_argument('--streaming-llm', action='store_true', help='Activate StreamingLLM to avoid re-evaluating the entire prompt when old messages are removed.')
+group.add_argument('--attention-sink-size', type=int, default=5, help='StreamingLLM: number of sink tokens. Only used if the trimmed prompt does not share a prefix with the old prompt.')
 
 # ExLlamaV2
 group = parser.add_argument_group('ExLlamaV2')
@@ -140,6 +142,7 @@ group.add_argument('--max_seq_len', type=int, default=2048, help='Maximum sequen
 group.add_argument('--cfg-cache', action='store_true', help='ExLlamav2_HF: Create an additional cache for CFG negative prompts. Necessary to use CFG with that loader.')
 group.add_argument('--no_flash_attn', action='store_true', help='Force flash-attention to not be used.')
 group.add_argument('--cache_8bit', action='store_true', help='Use 8-bit cache to save VRAM.')
+group.add_argument('--cache_4bit', action='store_true', help='Use Q4 cache to save VRAM.')
 group.add_argument('--num_experts_per_token', type=int, default=2, help='Number of experts to use for generation. Applies to MoE models like Mixtral.')
 
 # AutoGPTQ

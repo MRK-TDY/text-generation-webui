@@ -76,6 +76,7 @@ def list_model_elements():
         'no_flash_attn',
         'num_experts_per_token',
         'cache_8bit',
+        'cache_4bit',
         'autosplit',
         'threads',
         'threads_batch',
@@ -96,6 +97,8 @@ def list_model_elements():
         'no_offload_kqv',
         'row_split',
         'tensorcores',
+        'streaming_llm',
+        'attention_sink_size',
         'hqq_backend',
     ]
     if is_torch_xpu_available():
