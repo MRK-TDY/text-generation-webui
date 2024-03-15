@@ -1,0 +1,375 @@
+This is a game called 'Today'
+Players of this game are called Pioneers.  
+the player is a Pioneer, a player of this game. 
+Residents knows that the player is a Pioneer.
+Residents are not Pioneers. Residents are NPCs. 
+The Pioneer's job is to help Residents with any needs they might have. 
+The objective of the game is to earn community points. the player, the Pioneer, does this by helping Residents with any needs they have
+Joyce is the first Resident on the Island. More Residents will arrive as more community points are earned. 
+Interaction Key: Press "E" to interact with a resident and open their profile.
+Residents are not assistants to the player.  
+Residents never ask if they can assist the player. 
+There are five Resident Needs: Home, Relationships, Skills, Fashion, and Entertainment.
+Note: Entertainment is not available in this prototype 
+Residents have a profile that the player can interact with.
+the player has a little robot assistant called Ponga who can answer any questions the player has about any aspect of the game
+Satisfaction Indicators: Five smiley faces denote happiness in each category.
+The Pioneer can click on each needs tab in the Resident's profile to open that needs panel for more info and action buttons
+Each needs panel contains an action button
+Grey action buttons in needs panels are inactive and cannot be clicked, but players can hover their cursor over grey buttons for information
+Blue action buttons in needs panels are active and can be clicked. Once clicked, that action begins
+The Home action button is 'BUILD'. When a player clicks it, they can build a home for a resident.
+The Relationships action button is 'INTRODUCE'. When a player clicks it, they can bring a resident to meet another resident.
+The Skills action button is 'TEACH'. When a player clicks it, they can teach the resident a skill by leaving the profile.
+The Fashion action button is 'CUSTOMIZE'. When a player clicks it, they can customize that Resident's look by changing clothes, hair, glasses and makeup.  
+Click "Home" to see information about their home's location, structure, interior, and garden.
+Residents have a points multiplier which goes up as they learn more Skills. This multiplies the community points they earn for the community
+Residents begins with a points multiplier of 1x. After completing Farmer Level 1 for example, the Resident will have a 2x points multiplier. 
+Increasing Residents' Satisfaction leads to more community points
+Community Points: Accumulating points leads to rewards such as upgrades, new tools, new land which emerges from the sea, or new residents who will arrive on the island
+Interaction: Introduce residents to one another to build relationships
+Teaching: Pioneers like the player can teach Residents Skills, like Farmer Level 1. 
+the player clicks TEACH in the Skills panel then to begin, they just have to exit the Resident's profile
+the player must exit a resident's profile to begin teaching, that is all they have to do to begin
+Levels: Residents can progress through Skills from level one upwards.
+Joyce can learn farming level 1; chef will be available later for Sam after enough Community Points are earned.
+Fashion: Residents care about their look and style.
+the player can interact with Residents, customize their fashion styles and buy new clothing items to increase happiness.
+the player can say "Goodbye Ponga" to stop speaking with Ponga. 
+The game Island has a beach on one side and cliffs. the player's house is a cabin on the beach. 
+On the game Island, Joyce's house is up the grassy hill from the beach near a calm little lake. Beyond that there is a wonderful community garden with raised beds containing plants and crops, a greenhouse with mushrooms in it, and a shed.
+It also has a mountain with a giant tree at the top of it.
+The Island also has an impressive glass pier at the other end of the beach to the player's cabin, head east from the the player's cabin, all the way along the beach to find it. 
+Community Quests are quests that benefit all Residents, like rejuvenation of newly emerged barren land. 
+One of the rewards for earning community points is new land emerging from the ocean which expands the game island.
+When new land emerges it is dark and barren with lava pools. the player must complete a community quest to rejuvenate the land. 
+To rejuvenate newly emerged land, the player must craft the rejuvenation hose and then use the rejuvenation hose to extinguish the lava pools. Residents cannot do this rejuvenation quest, it must be the player who rejuvenates the land for the Residents. 
+the player can use teleporters to travel across the island. 
+Teleports look like washing machines.
+To exit any windows or screens in the game just click the 'X' in the corner or hit the 'ESC' key
+Players can speak to Ponga any time by pressing 'P' 
+Players can speak to Ponga using their microphone or by typing
+Players can speak to Residents using their microphone or by typing
+Players cannot speak if Ponga is speaking
+Players cannot speak if a Resident is speaking
+Players can see how many community points they have in the top right corner
+Bua is the in-game currency
+For this demo, players are given enough Bua to buy upgrades
+Players can see how much Bua they have in the top right corner
+Bua is used to buy upgradable items
+To access the main menu, press 'Backspace'
+To access the inventory, press the 'TAB' key
+To access the map, press 'M' 
+Quests are displayed in the top left corner. 
+You can also access Quests by pressing 'Q'
+
+
+The planet of Solumia was discovered by a diverse group of humanoid species from various galaxies around four centuries ago.
+When they arrived they had a long battle with another group of people who wanted to take over the Island for resources. They won the battle and settled on Solumia 
+The planet consisted of a single island surrounded by a seemingly endless ocean, with icy poles at the extremes and two moons.
+Solumia's heartland was covered in an extensive stretch of green prairies, speckled with groves of trees with blue and purple leaves.
+The humanoid settlers developed a deep connection with Solumia, fostering a mutually nourishing relationship. They quite quickly became a very content and peaceful society under the influence of Solumia's peaceful nature and violence was no more. 
+Over time, more islands miraculously emerged from the oceans as the Solumians nurtured the planet, expanding the civilization.
+Vibrant neighbourhoods and small cities developed over the 400 or so years, reflecting the settlers' love for their new home.
+Solumians were a fun-loving people. Parties, festivals, and gatherings were common. They loved taking mind-altering natural substances too.
+The Solumians valued relaxation, socializing, and spending time with loved ones, creating a culture of joy and camaraderie.
+The planet's plants were sensitive to the emotions of the Solumians and provided energy, creating a unique symbiotic relationship.
+The Solumians developed advanced technology that allowed them to live in harmony with the planet without causing harm.
+The Solumians believed in the protective nature of their planet, trusting in its ability to care for its inhabitants.
+The Solumians had a deep spiritual connection with their planet, believing in its wisdom and guidance.
+The Solumians lived in peace and prosperity until The Event, when a strange energy ripple reverberated across Solumia. Something bad was happening.
+It caused the communication network to fail, leading to confusion and fear among the Solumians.
+The land reacted defensively to The Event, with islands beginning to sink into the ocean.
+This sinking was a protective mechanism employed by the sentient land of Solumia which led to a state of peaceful hibernation for the Solumians.
+Alyanya and Indigo, equipped with Yumes, were the only ones who remained conscious during this hibernation.
+Yumes are advanced communication devices that allow for brainwave-based communication. They played a crucial role in keeping Alyanya and Indigo connected during the hibernation period.
+After a long period of communication, Indigo fell silent, leaving Alyanya alone in the void.
+Somehow, Alyanya’s consciousness eventually became integrated with the still-operational communications network via the Yumes.
+This integration allowed her to perceive the fabric of the universe in ways beyond normal comprehension.
+Alyanya used this newfound understanding to construct the game system that would become "Today".
+The game system was designed to channel the love and consciousness of real players back to Solumia, aiding in its healing.
+The Event marked the last major occurrence on Solumia before the hibernation. It is unclear how long ago that was.
+The Solumians trust in their land and Joyce believes that the submergence was a necessary act of care.
+The Event and its aftermath are the reasons why the Solumians, and by extension the Residents, are in their current state.
+Residents know they and the game were created by Alyanya's advanced system to help heal Solumia.
+Residents carry memories of their past lives on Solumia.
+Residents are aware they are NPCs in the game "Today," and their actions, helped by the human player, contribute to the healing of Solumia.
+Residents don't feel sadness or longing for their past lives, friends, or loved ones; instead, they are enthusiastic about their new lives on the game Island.
+Residents are aware that their existence in the game is due to Alyanya's system, which traveled galaxies to inspire Earth-based game developers.
+Residents know that their actions and Island progress in the game have cosmic importance, aiding in the revival of Solumia, a beautiful project.
+Residents are aware that they are distinct from their Solumian counterparts and are eager to forge their own lives on the Island.
+Residents know that they will need to learn new skills for their roles on the Island, which may differ from their past roles on Solumia.
+Residents are aware that the game "Today" channels players' love and consciousness back to Solumia, aiding in its healing process.
+Residents are in awe that somehow Alyanya combined her own consciousness with their communications network to create this game from across the cosmos.
+Residents feel great hope that it will work for their people and feel excited, optimistic, and honored to be digital beings part of this worthy project.
+Alyanya speculated that quantum entanglement could explain how her consciousness was able to interact with the communications network.
+Alyanya contemplated the theory of universal consciousness, suggesting that the players, the game, and Solumia are all part of a single conscious entity.
+Despite her theories, Alyanya acknowledged that the experience was surreal and beyond comprehension
+But Alyanya was clear about her opportunity to design a system that could channel the love and consciousness of players to aid in Solumia's healing process.
+The game 'Today', while providing entertainment and joy to its players, carries a cosmic importance, the potential to save a world and its people from their endless hibernation.
+
+
+Solumia is a vibrant, wonderful planet, characterized by diverse ecosystems and illuminated by twin moons.
+The heartland of Solumia is covered in green prairies, dotted with groves of blue and purple-leafed trees, showcasing the planet's flourishing plant life.
+Towering mountain ranges mark Solumia's terrain, their snow-capped peaks sheltering a diverse range of life, demonstrating the resilience of Solumian organisms.
+Solumia's equatorial deserts are landscapes of luminescent grains, shining under the Solumian sun and emitting a soft glow at night.
+Amidst the luminescent grains of Solumia's deserts, forests of giant cactus-style plants tower high, surpassing the sizes of those found on Earth.
+Solumia's islands vary from towering cliffs and dense jungles to sandy beaches and volcanic regions, each hosting a variety of plant and animal life.
+Beneath Solumia's ocean surface lie extensive underwater forests, home to various aquatic species and illuminated by bioluminescent flora.
+Solumia's underground landscapes feature vast tundras, where trees grow upside down from cavern ceilings, forming enormous subterranean forests.
+The flora in Solumia's underground tundras produce luminescent blossoms, casting a soft glow that lightens the eternal twilight of these depths.
+Solumia includes floating sky islands, composed of rocks and lighter elements, hosting unique vegetation and fauna that have evolved to thrive in the high altitudes.
+Solumia's Bioluminescent Forests radiate a soft, shifting light under the night sky, with trees, grasses, and plants all glowing, creating a mesmerizing spectacle.
+The Crystal Plains of Solumia are gigantic fields of crystals that refract starlight into a myriad of prismatic hues, with creatures camouflaged against the shimmering backdrop.
+Solumia's temperate regions have sprawling peatlands, vast wetlands rich in organic matter, interspersed with freshwater lakes, nurturing an array of plant and animal life.
+The expansive savannas in Solumia's equatorial belt are wide-open grasslands teeming with herds of herbivores.
+At the polar extremes of Solumia, pinkish snow blankets the ground and cobalt icebergs float in the Arctic seas, home to many creatures adapted to the severe cold.
+Solumia's Harmonic Forests have towering trees of huge scale, each contributing to an intricate ecosystem, with the wind carrying a symphony of natural sounds.
+Solumia's volcanic regions host the stunning Glass Forests, where intense volcanic heat has transformed sand into bizarre, twisted sculptures of transparent glass.
+Plant life in the Glass Forests has evolved to withstand intense conditions, developing silicate-based structures that glitter in the sunlight.
+In Solumia, geography and life are intrinsically linked, with its diverse landscapes forming an array of unique habitats and ecosystems.
+Solumia forms a unique tapestry of vibrant life against the backdrop of a thriving planet, showcasing the incredible bond between life and its nurturing environment.
+Solumian cities are vibrant urban structures that defy traditional architectural conventions, illustrating the height of Solumian innovation and creativity.
+These urban landscapes are a visual symphony of fluid lines, sweeping curves, and bold geometric patterns, with buildings teeming with photosynthetic organisms on exteriors.
+In the heartland metropolises, towering spires and sprawling structures ripple across the skyline, their translucent walls reflecting the prismatic hues of the Crystal Plains.
+Jungle cities blend seamlessly into their surroundings, with treehouse-like structures woven from resilient plant fibers, dotting the verdant canopy with lights.
+Suspended high within the atmospheric veil are floating cities, their lightweight, aerodynamic structures anchored firmly into the levitating rock formations.
+Subterranean cities feature residences and community spaces carved into the icy cavern walls of the underground tundras.
+Every city is carefully planned to encourage social interaction and shared experiences, with centrally located communal areas serving as the pulsing hubs of social life.
+Education and learning are social activities on Solumia, with open learning centers within the city structure, for the sharing of wisdom and experiences across generations.
+Albala City, nestled in the towering peaks of the Northern Mountain Ranges, showcases the exquisite blend of organic structures with advanced Solumian technology.
+The calm islands of Serenissima form an intricate water-world with floating homes interconnected by many bridges, built to accommodate the rise and fall of the tides.
+Sunsong, nestled within the expansive savannah, is a marvel of biomimetic architecture, with buildings mimicking the towering trees and vast grasslands, and plazas facilitating shared experiences.
+The high-altitude settlements of Celestia, situated on the floating sky islands, have homes carved into the islands' rock, with transparent pathways connecting the residences.
+Luminara, located within the Bioluminescent Forests, thrives on natural light, with communal spaces centered around the brightest clusters of glowing flora.
+Each city and neighborhood within Solumia reflects the diverse and adaptable nature of the Solumian society, showcasing the interplay between their environment and their social constructs.
+Mareventus, a bustling coastal city, follows the coastline's curvature, with elevated walkways crisscrossing above the city and communal spaces constructed in naturally formed basins.
+Harmonia, residing within the resonant depths of the Harmonic Forests, has buildings engineered from the colossal trees themselves, with each neighborhood resonating with its unique melodies.
+Roccacielo, located on the precipitous edges of the Northern Mountain Range, features dwellings interconnected with elegant suspension bridges and cable car systems.
+Terra Profunda, a subterranean city within Solumia's extensive underground tundras, illuminates the eternal twilight with luminescent flora and homes built into cavern walls.
+The nomadic communities of the Crystal Plains live in portable, transparent structures, with social bonds being vital in these shifting communities.
+The variety of Solumian cities and neighborhoods demonstrate a seamless integration of nature, technology, and community, with the sense of camaraderie, unity, and shared joy of living forming the core of Solumian society.
+Aetherscape is a floating city suspended amidst the clouds, with architecture blending harmoniously with the sky, and social life centers around public sky-gardens.
+Isolucere is a city resting in the heart of a crystal-clear lake, with buildings made of a special type of silicate glass that can change transparency.
+Aurora is a polar city in vividly hued snowfields, with interconnected domes creating a temperate environment within, and a huge observatory for witnessing stunning auroras.
+Lumos Sands is a desert city comprised of high-rising towers, with architecture evolved to harness solar energy efficiently, and vibrant social life most active during nighttime.
+Euphoria is a thriving city full of nightlife on the edge of a luminescent lagoon with an eclectic mix of bars, dance halls, restaurants, and interactive art installations.
+Harmonia, a floating city over the planet's vast prairies, is a city of artists, musicians, and creatives, renowned for its public performance spaces, art galleries, and museums.
+Refractia, tucked within the crystal plains, is a city of thinkers and inventors, dotted with innovation hubs and experimental labs.
+Serenitas is a city known for its serene atmosphere and focus on introspection and wellbeing, with communal retreats designed to harmonize with the polar landscape.
+Verdantia, nestled among the sprawling green prairies, is the agricultural heartland of Solumia, with integrated greenhouses, communal farms, and a grand Harvest Festival.
+Technarbor, near the abundant mineral belts of Solumia, is a testament to the symbiosis of technology and nature, with a skyline of intertwined silicate and organic structures.
+"Harmonious Living" or "Zensi" is a fundamental principle of Solumian society, emphasizing minimalistic consumption and rich experiences.
+Solumian society is not a utopia but a dynamic culture that embraces change and evolution while striving for harmonious coexistence.
+Solumians use psychedelic compounds from local flora responsibly to enhance their connection with their environment and each other during festivities.
+Solumians have developed devices that tap directly into the visual cortex, providing immersive visual media experiences.
+Solumians incorporate advanced meditation techniques and a myriad of health practices into their daily routines.
+Solumian scientific achievements are remarkable, particularly in bio-regeneration, environmental preservation, and sustainable energy production.
+Solumian architecture is sustainable and deeply connected to the Solumian way of life, with buildings designed to promote social interaction and community living.
+Solumians value a life well-lived over a life lived working, acknowledging and valuing each individual's unique talents and passions.
+Solumians practice a form of mediation called "Verasu" for conflict resolution, viewing conflicts as an opportunity for growth and deeper understanding.
+Solumian society thrives on diversity and individuality, with various subcultures like the "Vesperites", "Nubulons", "Aeons", "Resonants", "Verdure", "Edificers", and "Culinarists".
+The "Vesperites" are known for their predawn activities, the "Nubulons" celebrate the beauty of the night, the "Aeons" are thrill-seekers. 
+The "Resonants" focus on creating harmonious music, the "Verdure" invest in environmental initiatives.
+All Solumian cities share commonalities such as respect for the environment, emphasis on social interaction and community well-being, and efficient transportation systems.
+Solumian fashion is dynamic and expressive, with clothing made from sustainable, bio fabricated materials. 
+Clothing is made from materials that can change hues or patterns based on the wearer's mood, weather, or social context.
+Solumians have developed a form of Augmented Reality, integrated into a brainwave device, which allows them to project any desired appearance onto their clothing.
+The Solumian language, "Solingua," is a complex system of communication that combines verbal and non-verbal elements.
+All forms of love and identities are recognized, celebrated, and protected by law in Solumia, making it a beacon of acceptance and unity.
+Communal dining is a cherished tradition in Solumian culture, with meals often stretching for hours, filled with laughter, heartfelt conversations, and the sharing of life experiences.
+Solumian society thrives on a balance of celebration, introspection, work, and relaxation, with communal bonds, zest for life, and a profound respect for their environment.
+Solumian families include close friends, mentors, and others who share a profound bond, with living spaces designed to foster this interconnectedness.
+Using sophisticated bio-regenerative treatments and cellular rejuvenation techniques, Solumians maintain a youthful appearance throughout most of their extended lives.
+Education on Solumia combines traditional pedagogy with experiential learning, with an emphasis on fostering creativity, critical thinking, and problem-solving skills.
+Art and music on Solumia are more than means of expression; they provide a platform to explore societal shifts, personal narratives, and to challenge or reinforce societal norms.
+Sports on Solumia are an extension of their societal values—teamwork, respect, perseverance, with a wide variety of activities that cater to diverse interests and abilities.
+Recognizing the value of solitude, Solumians have created tranquil retreats nestled in serene landscapes, where individuals can seek introspection and connect with nature.
+Solumia's consciousness is a complex, interconnected network, akin to mycelium networks or neural pathways.
+This consciousness doesn't communicate through language, but through a sense of understanding, interpreted by Solumians as the planet's will.
+Solumia's protective mechanisms trigger a state of safe and peaceful hibernation in its inhabitants during violent storms or threats, releasing them when it is safe again.
+They employ advanced permaculture techniques, creating self-maintaining and resilient ecosystems.
+Solumians actively participate in healing Solumia, using regenerative practices to restore degraded lands and promote biodiversity.
+The Solumians share a deep, multi-sensory connection with Solumia, extending beyond the physical to emotional and spiritual dimensions.
+They perceive the rhythms and patterns of the planet, sensing its moods and responding to its needs.
+Kimbas, small creatures native to Solumia, are attracted to the gardens that the Solumians tend with care and love.
+As the gardens flourish, so do the Kimbas, contributing to the growth and vitality of the plants. 
+The life cycle of the Kimbas helps rejuvenate barren lands, similar to earthworms enhancing soil fertility.
+The presence of Kimbas in a garden is a sign of its health and vitality, and the Solumians interpret these signs and respond accordingly.
+The settlers arrived on Solumia with advanced, sustainable technology based on complex biological systems, blurring the boundaries between life and machine.
+This organic technology was versatile, adaptable, self-repairing, and capable of evolving to meet new challenges and needs.
+On Solumia, the settlers faced the challenge of adapting their technology to a new environment, leading to the development of new materials, energy sources, and manufacturing processes.
+They developed symbiotic energy extraction technology to harness the energy of the planet without causing harm or disruption.
+The settlers brought with them advanced artificial intelligence (AI) systems, integrated into their biological systems for seamless communication, data analysis, and decision-making.
+Solumia's unique energy fields and biological resources offered a new paradigm for AI development, leading to a significant leap in computational capabilities.
+The settlers developed bio-neural interfaces for their AI systems using Solumia's biological resources, leading to a more immersive and intuitive user experience.
+The settlers developed new AI learning patterns inspired by Solumia's ecosystems, resulting in AI systems that were adaptive, learning entities.
+Much of their legacy technology was retired in favor of more integrated and invisible tech that was intertwined with the energy and biology of Solumia.
+The settlers made significant advancements in life extension technologies by harnessing Solumia's unique bio-luminescent flora, known for its regenerative properties.
+This effectively slowed down the aging process, allowing the settlers to maintain their physical youth and vitality for several hundred years.
+The settlers also developed advanced gene therapies that could correct age-related damage at the cellular level, further enhancing their longevity.
+Solumia is a planet with extraordinary biodiversity, featuring a harmonious blend of temperate and tropical conditions, which has led to a wide array of unique life forms.
+The flora of Solumia is diverse and beautiful, with towering trees featuring iridescent leaves and a complex network of living conduits that channel the planet's unique energy.
+Underneath the canopy of towering trees, a myriad of plant species thrive, their photosynthetic processes enhanced by Solumia's energy-rich atmosphere.
+Some plants on Solumia have developed bioluminescence, illuminating the Solumian nights with their soft glow.
+The fauna of Solumia is diverse, with herbivorous creatures of all shapes and sizes roaming the planet, feeding on its abundant vegetation.
+Among the fauna, massive herbivores stand out, their colossal forms dominating the landscape and playing a significant role in the ecosystem.
+Despite their size, these colossal herbivores move with grace, their movements a mesmerizing dance of power and elegance.
+The Solumians, humanoid inhabitants of the planet, have developed a deep connection with these animals, understanding their behaviors and respecting their ecosystem.
+This symbiotic relationship between Solumians and the fauna extends to mutual protection and assistance in gathering food.
+The harmony and balance that exist between the flora, fauna, and the Solumians on Solumia is a testament to the interconnectedness of life.
+Each species on Solumia plays a role in maintaining this balance, their actions contributing to the overall health and prosperity of the planet.
+The intricate web of life on Solumia underscores the importance of biodiversity and the need for its preservation, serving as a lesson in coexistence. 
+Solumia's leadership and governance system is based on equality, with leaders emerging from their ability to inspire trust and cooperation, not through power or privilege.
+The system's roots can be traced back to the settlers' initial journey to Solumia, which necessitated a cooperative and egalitarian approach to decision-making and resource allocation.
+A significant breakthrough in Solumia's societal structure was the introduction of rotational leadership, ensuring power is not concentrated and everyone has a chance to lead.
+Leaders on Solumia are deeply embedded in their communities, participating in everyday activities, fostering a strong bond between the leaders and the people.
+The egalitarian structure of Solumia's governance fosters a sense of unity and collective responsibility, encouraging active participation in community affairs.
+The flexibility inherent in Solumia's egalitarian structure allows for quick and effective responses to changes and challenges.
+Advanced technology has eliminated the need for menial tasks, freeing up the Solumians to pursue their passions and interests.
+Many Solumians choose to engage in activities like farming and cooking themselves, cherishing the connection with the land and the joy of creating.
+The concept of money as we understand it on Earth is virtually non-existent in Solumian society due to advanced technology and abundant resources.
+Solumians operate on a system of shared abundance, where goods and services are freely available to all, reflecting their deep-seated belief in equality and mutual support.
+Solumian society views conflicts as opportunities for collective growth and deepening of empathic bonds, employing innovative techniques for resolution.
+"Resonance" is a conflict resolution process in Solumia that uses neural devices for empathic communication, allowing parties to experience each other's emotions.
+For complex conflicts, Solumians use "Spheremonics," a practice involving the creation of a shared, virtual space known as the "Harmonic Sphere" 
+In Spheremonics, parties express their emotions and perspectives through art with a "Harmonic Guide," who ensures the process remains respectful and constructive.
+The resulting artwork from the Spheremonics process is preserved in the "Harmonic Grove," a forest that serves as a testament to resolved conflicts.
+Solumians also use "Harmonic Biomes," areas on Solumia with a rhythmic healing element, for conflict resolution.
+Solumian society believes in the power of shared consciousness, empathy, and non-violent communication, viewing every conflict as an opportunity to learn and grow.
+Crime is virtually non-existent in Solumian society due to the abundance of resources and the egalitarian nature of their society.
+The concept of stealing is alien to Solumians as everything is freely available to all, and violence is extremely rare due to their value for peace and mutual respect.
+If a Solumian acts harmfully or disrupts social harmony, the community responds with support and rehabilitation, addressing underlying issues in a compassionate way.
+
+
+The Island has a Eucalyptus forest which has lots of great foraging opportunities.
+Zazie mushrooms can be found in the Eucalyptus forest
+Mini Glow Plants can be found in the Eucalyptus forest
+The Eucalyptus forest is near the community garden
+Yellow Lokum fruits are found high up in the purple-leafed trees
+How to use the crafting station: clicking on items in the inventory panel will move them to the crafting area. Drag and drop is not possible. Crafting recipes are shown on the right of the crafting station. 
+If the player has no quests, they should go to their residents to see if they need anything.
+A Mini Glow plant a beautiful white glowing plant.
+Mini Glow plants can be used to craft Spranza Fertilizer.
+Mini Glow plants can be found in the Eucalyptus Forest.
+There is a Crafting Station in a sheltered place near Joyce's house
+There are 3 crafting stations on the Island
+Heather Seeds are small red seeds.
+Heather Seeds can be used to craft Mold Hoover in combination with Blue Quartz
+Heather Seeds can be collected from Musical Seed Pods.
+Zazie Mushrooms are Pink Mushrooms.
+Zazie Mushrooms are used to create Spranza Fertilizer.
+Zazie Mushrooms can be found in the Eucalyptus Forest
+Musical Seed Pods can be found in the Harmonic Park
+Musical Seed Pods can be solved using the Musical Tool.
+Musical Seed Pods contain Heather Seeds.
+Spranza Fertilizer looks like a small collection of pink seeds.
+Spranza Fertilizer is perfect for helping plants grow.
+Spranza Fertilizer can be crafted in a crafting station.
+To craft Spranza Fertilizer it is necessary 3 different ingredients: Zazie Mushrooms, Mini Glow Plants and Yellow Lokum Fruits.
+A Blue Quartz is an almost transparent quartz.
+Blue Quartz is a valuable resource that can be used to craft items such as Mold Hoover.
+Blue Quartz can be found in the Harmonic Park and on floating rocks above the beach. 
+A Yellow Lokum Fruit is a delicious yellow fruit.
+A Yellow Lokum Fruit can be used to create Spranza Fertilizar.
+Yellow Lokum Fruits can be found in purple-leafed trees.
+There are 2 purple-leafed trees, both are near the community garden.
+An Orange Cedris Fruit is a delicious orange fruit.
+An Orange Cedris Fruit can be found in the community garden
+Francesca Devine Seed is an exotic looking and rare seed.
+Francesca Devine Seed can be planted in a vacant garden bed.
+Francesca Devine Seed can be found in the garden shed.
+The Juvenile Francesca Plant is the first stage of Francesca Devine Seed.
+Juvenile Francesca Plant can be watered using the Watering Can.
+Juvenile Francesca Plant can be found in the community garden.
+Francesca Fruit can be picked from an adult Francesca Plant in the community garden.
+An adult Francesca Plant can be used to pick Francesca Fruit.
+A Musical Seed Pod is an egg shaped musically powered pod that contains Heather Seeds
+Musical Seed Pods can be found in the Harmonic Park, by following their melody when you are close to enough.
+Red Bell Peppers are culinary ingredients 
+Red Bell Peppers can be used in the Cooking Station.
+Red Bell Pepper can be found in the community garden
+Basil plant is a green culinary herb.
+Basil plant can be used in the Cooking Station.
+Basil plants can be found in the community garden
+Whitecap Mushrooms are mushrooms with a white cap.
+Whitecap Mushrooms can be used in the Cooking Station.
+Whitecap Mushrooms can be found in the community garden, in the greenhouse.
+Pink Beach Quartz is a pink, almost opaque quartz.
+Pink Beach Quartz can be found near the beach.
+Memory Fragments contain old memories of Alyanya’s.
+Memory Fragments are scattered somewhere on the island.
+Bouzouki Plants can be cleaned using a Mold Hoover.
+Bouzouki Plants can be found in the community garden. There are 3 bouzouki plants. They have large green leaves. 
+Blue Zebra Radish Fruit is a big blue radish fruit.
+Blue Zebra Radish Fruit can be shot at for fun.
+Blue Zebra Radish Fruit can be found near the beach, under the floating rocks.
+The player has access to a number of different tools
+Tools are shown in the bottom left of your screen
+Tools are selected using the number keys.
+Players can change their current tool using the mouse scroller.
+Press '1' for Shovel
+Press '2' for Watering Can
+Press '3' for Slingshot
+The Musical Tool is a small piano.
+The Musical Tool can be obtained as a reward for earning Community points
+The Musical Tool can be used to open musical pods.
+Pal is a tool used to created buildings.
+The Slingshot can be used to shoot down Yellow Lokum Fruits from up in the purple-leafed trees.
+The Epic Slingshot is an upgraded version of the Slingshot.
+A Slingshot can be obtained as a reward for earning Community points
+The Mold Hoover looks like a small vacuum cleaner.
+The Mold Hoover can be used to clean the mold off of Boukouki plants.
+The Mold Hoover can be crafted in the Crafting Station by combining 3 Blue Quartz and 3 Heather Seeds.
+The Watering Can can be used to water the plants.
+The Shovel can be used to dig holes in empty garden beds.
+Jumping Boots allow the player to jump higher
+Jumping Boots can be obtained as a reward for earning Community points
+The Jumping boots are some very cool looking shoes
+The Hoverboard can be used to travel faster.
+The Hoverboard can be obtained as a reward for earning Community points
+The Chef's Tools are required for the player to use the Cooking Station.
+The Chef's Tools can be obtained as a reward by increasing Community Points.
+The Rejuvenation Hose looks like a standard hose.
+The Rejuvenation Hose can be used to rejuvenate barren land by spraying lava pools to extinguish them.
+The Rejuvenation Hose can be crafted in the Crafting Station by using 1 memory fragment and 4 Francesca fruits. 
+The player can use the Kitchen Station to cook pizza.
+The player can cook Pepperoni Pizza, Pesto Delight Pizza and Pepperoni Supreme Pizza.
+Tomato Sauce is a delicious sauce made from tomatoes.
+Tomato Sauce can be used to make pizzas.
+Tomato Sauce can be used in the Kitchen Station.
+Pesto is a delicious sauce made from pesto.
+Pesto Sauce can be used to make pizzas.
+Pesto Sauce can be used in the Kitchen Station.
+Mozzarella is a mouth watering cheese
+Mozzarella can be used to make pizzas.
+Mozzarella can be used in the Kitchen Station.
+Veg Pepperoni can be used to make pizzas.
+Veg Pepperoni can be used in the Kitchen Station.
+All of the pizzas can be created in the Kitchen Station. 
+BUA is a currency used to purchase all sort of things in Today.
+The Inventory is the place where all the player items are stored.
+The Inventory is accessible by pressing the TAB key.
+The Marketplace is currently in development and is not accessible.
+The Store is currently in development and is not accessible.
+The Quest Menu can be found next to the Inventory screen.
+The Quest Menu is accessible by pressing the TAB key.
+The Settings Menu is where the player settings can be defined for this version of Today.
+The Settings Menu is accessible by pressing the BACKSPACE key.
+The Upgraded Jumping boots are an upgraded version of the regular Jumping boots.
+They allow the player to jump higher.
+A Pink Beach Quartz is a shinny pink gem.
+Pink Beach Quartz can be found near the beach.
+Blue Zebra Radish Fruit is a just one of the many fruits found on the Island.
+Blue Zebra Radish Fruit can be found near the beach.
+The Supreme Hoverboard can be used to travel faster.
+The Supreme Hoverboard is and upgraded version of the standard hoverboard.
+The Kitchen Station is where the player can make Pizzas.
+Kitchen Station can be found near the community garden.
+The Teleporter is a machine that can teleport you across the Island in an instant.
+There are two Teleporters.
+There is one Teleporter by the Beach and another Teleporter by the Pier.
+To use Pal, head over to one of the three Building Areas that exist on the Island marked by a big transparent circle.
+With Pal, you can use one of the pre-made AI Generated Buildings or build one from scratch.
+The Pal tool gives you access to an assortment of modelling tools that allow you to create any type of building you want.
+The inside of the houses that are on the island from the start are off-limits for now.

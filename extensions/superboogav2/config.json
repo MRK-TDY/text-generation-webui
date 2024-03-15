@@ -127,7 +127,7 @@
       "default": "\n\n<<document end>>\n\n"
     },
     "manual": {
-      "default": true
+      "default": false
     },
     "add_chat_to_data": {
       "default": true
