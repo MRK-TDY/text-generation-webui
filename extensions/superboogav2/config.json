@@ -90,7 +90,7 @@
       "should_optimize": false
     },
     "chunk_count": {
-      "default": 250,
+      "default": 100,
       "categories": [30, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400],
       "should_optimize": true
     },
@@ -115,7 +115,7 @@
       "should_optimize": false
     },
     "chunk_separator": {
-      "default": ""
+      "default": "\n"
     },
     "prefix": {
       "default": "<<document chunk>>\n\n"
@@ -130,7 +130,7 @@
       "default": false
     },
     "add_chat_to_data": {
-      "default": true
+      "default": false
     },
     "injection_strategy": {
       "default": "PREPEND_TO_LAST",
@@ -156,6 +156,12 @@
     },
     "api_on": {
       "default": false
+    },
+    "load_file_at_startup": {
+      "default": true
+    },
+    "startup_filepath": {
+      "default": "knowledge_base/TodayKnowledgeBase.txt"
     }
   }
   

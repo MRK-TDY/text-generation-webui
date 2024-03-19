@@ -80,7 +80,7 @@ class ChromaCollector():
         name = ''.join(random.choice('ab') for _ in range(10))
 
         self.name = name
-        self.chroma_client = chromadb.Client(Settings(anonymized_telemetry=False))
+        self.chroma_client = chromadb.Client(Settings(anonymized_telemetry=False, allow_reset=True))
         self.collection = self.chroma_client.create_collection(name=name, embedding_function=embedder)
 
         self.ids = []

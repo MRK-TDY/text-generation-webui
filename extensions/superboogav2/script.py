@@ -38,6 +38,11 @@ def setup():
 
     if parameters.get_api_on():
         api_manager.start_server(parameters.get_api_port())
+    
+    if parameters.get_load_file_at_startup():
+        with open(Path(parameters.get_startup_filepath())) as file:
+            text = file.read()
+            process_and_add_to_collector(text, collector, False, create_metadata_source('file'))
 
 
 def _feed_data_into_collector(corpus):

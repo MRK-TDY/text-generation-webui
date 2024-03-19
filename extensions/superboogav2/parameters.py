@@ -365,3 +365,21 @@ def set_api_port(value: int):
 
 def set_api_on(value: bool):
     Parameters.getInstance().hyperparameters['api_on']['default'] = value
+
+
+
+
+def set_load_file_at_startup(value: bool):
+    Parameters.getInstance().hyperparameters['load_file_at_startup']['default'] = value
+
+
+def get_load_file_at_startup() -> bool:
+    return Parameters.getInstance().hyperparameters['load_file_at_startup']['default']
+
+
+def set_startup_filepath(value: str):
+    Parameters.getInstance().hyperparameters['startup_filepath']['default'] = value
+
+
+def get_startup_filepath() -> str:
+    return Parameters.getInstance().hyperparameters['startup_filepath']['default']
