@@ -21,6 +21,8 @@ from modules.logging_colors import logger
 
 from extensions.silero_tts import script as tts_script
 
+from extensions.intent_detection import script as intent_script
+
 import re
 
 PATH = '/api/v1/stream'
@@ -243,87 +245,98 @@ async def check_intent(websocket, user_input, state):
     if not user_input:
         return
 
-    tts_script.params.update({
-        "tts_mode": "off"
-    })
 
     print("Checking for Intents...")
 
-    intents_str = ""
+    intents = {}
     for intent in state['intents']:
-        intents_str += "ID: {id}\n".format(id=intent['id'])
-        intents_str += "Sentences:\n"
-        for sentence in intent['training_phrases']:
-            intents_str += "- \"{sentence}\"\n".format(sentence=sentence)
-    intent_input = ("Given the following intents composed of IDs and sentences:\n"
-                    "\n"
-                    "{intents}\n"
-                    "\n"
-                    "To which intent is the sentence \"{input}\" more related?\n"
-                    "\n"
-                    "Answer only with the ID or \"none\". No explanation. No other words. Super short response."
-                    ).format(intents=intents_str, input=user_input)
-    
-    # Add instruction tags
-    intent_input = f"[INST]{intent_input}[/INST]"
+        intents[intent['id']] = intent_script.intent_similarity(user_input, intent['training_phrases'])
+    max_intent = None
+    for intent_id, intent_score in intents.items():
+        if max_intent is None or intent_score > intents[max_intent]:
+            max_intent = intent_id
 
-    
-    
-    # create gen params for intent questioning.
-    generate_params = build_parameters({})
-    generate_params.update({
-        "mode": "instruct",
-        "tts_mode": "off",
-        "stream": False,
-        "max_new_tokens": 100,
-        "temperature": 0.1,
-        "top_p": 0,
-        "min_p": 0,
-        "top_k": 0,
-        "repetition_penalty": 1.5,
-        "presence_penalty": 2,
-        "do_sample": False,
-        # "num_beams": 3,
-        # "length_penalty": -5,
-        # "early_stopping": True,
-        "guidance_scale": 1.5,
-        "negative_prompt": "Long answer. Explain. Based on the given intents. Here's my answer. Sure!",
-    })
-    stopping_strings = generate_params.pop('stopping_strings')
-    generator = generate_reply(
-        intent_input, generate_params, stopping_strings=stopping_strings, is_chat=False)
-    
+    # tts_script.params.update({
+    #     "tts_mode": "off"
+    # })
+    #
+    # intents_str = ""
+    # for intent in state['intents']:
+    #     intents_str += "ID: {id}\n".format(id=intent['id'])
+    #     intents_str += "Sentences:\n"
+    #     for sentence in intent['training_phrases']:
+    #         intents_str += "- \"{sentence}\"\n".format(sentence=sentence)
+    # intent_input = ("Given the following intents composed of IDs and sentences:\n"
+    #                 "\n"
+    #                 "{intents}\n"
+    #                 "\n"
+    #                 "To which intent is the sentence \"{input}\" more related?\n"
+    #                 "\n"
+    #                 "Answer only with the ID or \"none\". No explanation. No other words. Super short response."
+    #                 ).format(intents=intents_str, input=user_input)
+    #
+    # # Add instruction tags
+    # intent_input = f"[INST]{intent_input}[/INST]"
+    #
+    # # create gen params for intent questioning.
+    # generate_params = build_parameters({})
+    # generate_params.update({
+    #     "mode": "instruct",
+    #     "tts_mode": "off",
+    #     "stream": False,
+    #     "max_new_tokens": 100,
+    #     "temperature": 0.1,
+    #     "top_p": 0,
+    #     "min_p": 0,
+    #     "top_k": 0,
+    #     "repetition_penalty": 1.5,
+    #     "presence_penalty": 2,
+    #     "do_sample": False,
+    #     # "num_beams": 3,
+    #     # "length_penalty": -5,
+    #     # "early_stopping": True,
+    #     "guidance_scale": 1.5,
+    #     "negative_prompt": "Long answer. Explain. Based on the given intents. Here's my answer. Sure!",
+    # })
+    # stopping_strings = generate_params.pop('stopping_strings')
+    # generator = generate_reply(
+    #     intent_input, generate_params, stopping_strings=stopping_strings, is_chat=False)
+    #
+    # message_num = 0
+    # answer = ''
+    # for a in generator:
+    #     answer = a
+    #
+    # tts_script.params.update({
+    #     "tts_mode": state['tts_mode']
+    # })
+    #
+    # # latest_answer = answer['internal'][-1][-1]
+    # latest_answer = answer
+    #
+    # def format_intent_id(input: str) -> str:
+    #     result = input.lower()
+    #     result = result.replace("_", "")
+    #     result = result.strip()
+    #     return result
+    #
+    # # check if the answer matches any of the intents
+    # for intent in state['intents']:
+    #     if format_intent_id(intent['id']) in format_intent_id(latest_answer):
+    #         history['triggered_intent_id'] = intent['id']
+    #         break
+    #
+    # if not history['triggered_intent_id']:
+    #     print(f"No intent triggered. Generation: {latest_answer}")
+    #     return
+    #
+    # print(f"Intent match found. Triggering {history['triggered_intent_id']}. Generation: {latest_answer}")
 
-    message_num = 0
-    answer = ''
-    for a in generator:
-        answer = a
-    
-    tts_script.params.update({
-        "tts_mode": state['tts_mode']
-    })
-    
-    # latest_answer = answer['internal'][-1][-1]
-    latest_answer = answer
-
-    def format_intent_id(input: str) -> str:
-        result = input.lower()
-        result = result.replace("_", "")
-        result = result.strip()
-        return result
-
-    # check if the answer matches any of the intents
-    for intent in state['intents']:
-        if format_intent_id(intent['id']) in format_intent_id(latest_answer):
-            history['triggered_intent_id'] = intent['id']
-            break
-
-    if not history['triggered_intent_id']:
-        print(f"No intent triggered. Generation: {latest_answer}")
+    if intents[max_intent] < 0.8:
+        print("No intent triggered.")
         return
 
-    print(f"Intent match found. Triggering {history['triggered_intent_id']}. Generation: {latest_answer}")
-
+    history['triggered_intent_id'] = max_intent
     # fix history
     internal = [ user_input, "" ]
     history['internal'].append(internal)
