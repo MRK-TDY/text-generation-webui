@@ -50,3 +50,4 @@ wandb
 .env
 
 CMD_FLAGS.txt
+settings.yaml
