@@ -25,7 +25,7 @@ stream: true
 name1: You
 character: Joyce
 instruction_template: Llama-v2
-custom_system_message: 'Answer the request using very short responses. Use only up to three short sentences.'
+custom_system_message: 'Answer the request using very short responses. Use only up to 2 short sentences.'
 chat-instruct_command: |-
   Continue the chat dialogue below. Write a single short reply acting as the character "<|character|>".
 
@@ -72,8 +72,9 @@ default_extensions:
 - silero_tts 
 # - whisper_stt
 - api
-- superboogav2
+#- superboogav2
 - Training_PRO
+- intent_detection
 # whisper_stt-whipser_language: chinese
 # whisper_stt-whipser_model: base.en
 # whisper_stt-auto_submit: True
