@@ -215,7 +215,7 @@ def output_modifier(string, state):
     string_to_voice = tts_preprocessor.preprocess(unsaid_string)
 
     if string_to_voice == '':
-        string_to_voice = '*Empty reply, try regenerating*'
+        pass
     else:
         string_to_voice = save_audio_to_file(state, string_to_voice, unsaid_string)
 
@@ -261,7 +261,7 @@ def output_stream_modifier(string, state):
     string_to_voice = tts_preprocessor.preprocess(string_to_voice)
 
     if string_to_voice == '':
-        string_to_voice = '*Empty reply, try regenerating*'
+        pass
     else:
         string_to_voice = save_audio_to_file(state, string_to_voice, original_string)
 
