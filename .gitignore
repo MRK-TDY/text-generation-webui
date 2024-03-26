@@ -48,3 +48,5 @@ wandb
 /docker-compose.yml
 /Dockerfile
 .env
+
+CMD_FLAGS.txt
