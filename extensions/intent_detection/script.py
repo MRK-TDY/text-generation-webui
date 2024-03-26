@@ -1,11 +1,18 @@
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
+import torch
 from modules.logging_colors import logger
+
+
+params = {
+    "device": "cuda:1"
+}
 
 
 def setup():
     global embedding_model
-    embedding_model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1")
+    device = torch.device(params["device"])
+    embedding_model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1", device=device)
 
 def intent_similarity(query: str, intent_samples: list[str], threshold: float = 0.8) -> float:
     global embedding_model
