@@ -36,7 +36,7 @@
 
 # --gradio-auth mrkite:todaythegame
 #--api-key our-api-key
---listen-port 7680
+# --listen-port 7680 # set only if different from 7680
 --api-blocking-port 5000
 --api-streaming-port 5005
 
