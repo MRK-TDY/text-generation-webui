@@ -5,14 +5,19 @@ from modules.logging_colors import logger
 
 
 params = {
-    "device": "cuda:1"
+    "device": "1"
 }
 
 
 def setup():
     global embedding_model
-    device = torch.device(params["device"])
-    embedding_model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1", device=device)
+    device = int(params["device"])
+    if torch.cuda.is_available() and device < torch.cuda.device_count():
+        device = f"cuda:{device}"
+        device = torch.device(device)
+        embedding_model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1", device=device)
+    else:
+        embedding_model = SentenceTransformer("mixedbread-ai/mxbai-embed-large-v1")
 
 def intent_similarity(query: str, intent_samples: list[str], threshold: float = 0.8) -> float:
     global embedding_model
