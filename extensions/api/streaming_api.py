@@ -107,7 +107,7 @@ async def _handle_chat_stream_message(websocket, message):
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
 
-    last_sentence_index = tts_script.last_sentence_index
+    last_sentence_index = 0
     message_num = 0
     for a in generator:
         for phrases in a["visible"]:
@@ -117,12 +117,14 @@ async def _handle_chat_stream_message(websocket, message):
             for i, phrase in enumerate(phrases):
                 phrases[i] = re.sub(r'\*.*?\*', '', phrase)
 
-        # if last visible phrase is empty, skip
-        if do_sentence_check and last_sentence_index == tts_script.last_sentence_index:
-            await asyncio.sleep(0)
-            continue
-        
-        last_sentence_index = tts_script.last_sentence_index
+        if 'tts_last_sentence_index' in generate_params:
+            # if last visible phrase is empty, skip
+            if do_sentence_check and \
+                last_sentence_index == generate_params['tts_last_sentence_index']:
+                await asyncio.sleep(0)
+                continue
+            
+            last_sentence_index = generate_params['tts_last_sentence_index']
 
         await websocket.send(json.dumps({
             'event': 'text_stream',
