@@ -4,7 +4,7 @@ from modules.logging_colors import logger
 
 
 params = {
-    "knowledge_api": ""
+    "knowledge_api_endpoint": ""
 }
 
 
@@ -18,13 +18,16 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 5, h
         "top_k": top_k,
         "history_n": history_n
     }
+    try:
+        results = requests.get(f"{params['knowledge_api_endpoint']}/search", json=data)
+        results = results.json()
+        results = results["results"]
+    except Exception:
+        return ""
 
-    results = requests.get(f"{params['knowledge_api']}/search", json=data)
-    results = results.json()
-    results = results["results"]
     if len(results) == 0:
         return ""
     results = "\n".join(results)
-    context = f"\n<knowledge_start>\n{results}\n<knowledge_end>\n"
+    context = f"\n{results}\n"
     return context
 
