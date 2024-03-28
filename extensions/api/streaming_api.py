@@ -81,6 +81,7 @@ async def _handle_chat_stream_message(websocket, message):
         if generate_params['history']['triggered_intent_id']:
             return
 
+    do_sentence_check = False
     tts_script.params.update({
         "tts_mode": generate_params['tts_mode']
     })
@@ -96,6 +97,7 @@ async def _handle_chat_stream_message(websocket, message):
             "voice_speed": generate_params['silero_tts_voice_speed'],
             "elevenlabs_speaker": generate_params['elevenlabs_speaker'],
         })
+        do_sentence_check = True
 
     if generate_params['mode'] == "verbatim":
         print("Verbatim mode is enabled.")
@@ -110,6 +112,7 @@ async def _handle_chat_stream_message(websocket, message):
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
 
+    last_sentence_index = 0
     message_num = 0
     for a in generator:
         for phrases in a["visible"]:
@@ -118,6 +121,15 @@ async def _handle_chat_stream_message(websocket, message):
         for phrases in a["internal"]:
             for i, phrase in enumerate(phrases):
                 phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+
+        if 'tts_last_sentence_index' in generate_params:
+            # if last visible phrase is empty, skip
+            if do_sentence_check and \
+                last_sentence_index == generate_params['tts_last_sentence_index']:
+                await asyncio.sleep(0)
+                continue
+            
+            last_sentence_index = generate_params['tts_last_sentence_index']
 
         await websocket.send(json.dumps({
             'event': 'text_stream',

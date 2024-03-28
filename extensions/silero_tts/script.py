@@ -79,8 +79,6 @@ params = {
 
 current_params = params.copy()
 
-last_sentence_index = 0
-
 with open(Path("extensions/silero_tts/languages.json"), encoding='utf8') as f:
     languages = json.load(f)
 
@@ -143,13 +141,12 @@ def state_modifier(state):
 
 
 def input_modifier(string, state):
-    global last_sentence_index
     if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
 
     # shared.processing_message = "*Is recording a voice message...*"
     
-    last_sentence_index = 0
+    state['tts_last_sentence_index'] = 0
     return string
 
 
@@ -192,7 +189,7 @@ def save_audio_to_file(state, string_to_voice, original_string):
     return string_to_voice
 
 def output_modifier(string, state):
-    global model, current_params, streaming_state, last_sentence_index
+    global model, current_params, streaming_state
 
     for i in params:
         if params[i] != current_params[i]:
@@ -203,19 +200,22 @@ def output_modifier(string, state):
     if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
     
-    unsaid_string = string[last_sentence_index::]
+    if not 'tts_last_sentence_index' in state:
+        state['tts_last_sentence_index'] = 0
+    
+    unsaid_string = string[state['tts_last_sentence_index']::]
     unsaid_string = unsaid_string.strip()
 
     if len(unsaid_string) == 0:
         return string
 
     unescaped_string = string
-    previous_sentence_index = last_sentence_index
+    previous_sentence_index = state['tts_last_sentence_index']
 
     string_to_voice = tts_preprocessor.preprocess(unsaid_string)
 
     if string_to_voice == '':
-        string_to_voice = '*Empty reply, try regenerating*'
+        pass
     else:
         string_to_voice = save_audio_to_file(state, string_to_voice, unsaid_string)
 
@@ -224,13 +224,13 @@ def output_modifier(string, state):
         relevant_string = unescaped_string[0:previous_sentence_index] + "\n\n" + relevant_string
 
     final_string = relevant_string
-    last_sentence_index = len(relevant_string)
+    state['tts_last_sentence_index'] = len(relevant_string)
 
     return final_string
 
 
 def output_stream_modifier(string, state):
-    global model, current_params, streaming_state, last_sentence_index
+    global model, current_params, streaming_state
 
     for i in params:
         if params[i] != current_params[i]:
@@ -240,14 +240,17 @@ def output_stream_modifier(string, state):
 
     if not params['tts_mode'] in tts_modes or params['tts_mode'] == "off":
         return string
+    
+    if not 'tts_last_sentence_index' in state:
+        state['tts_last_sentence_index'] = 0
 
     # unescaped_string = html.unescape(string)
     unescaped_string = string
     string_to_voice = ''
-    previous_sentence_index = last_sentence_index
+    previous_sentence_index = state['tts_last_sentence_index']
 
     while True:
-        sentence, last_sentence_index = get_next_sentence(unescaped_string, last_sentence_index)
+        sentence, state['tts_last_sentence_index'] = get_next_sentence(unescaped_string, state['tts_last_sentence_index'])
         if sentence is None:
             break
 
@@ -261,7 +264,7 @@ def output_stream_modifier(string, state):
     string_to_voice = tts_preprocessor.preprocess(string_to_voice)
 
     if string_to_voice == '':
-        string_to_voice = '*Empty reply, try regenerating*'
+        pass
     else:
         string_to_voice = save_audio_to_file(state, string_to_voice, original_string)
 
@@ -269,10 +272,10 @@ def output_stream_modifier(string, state):
     if previous_sentence_index != 0:
         relevant_string = unescaped_string[0:previous_sentence_index] + "\n\n" + relevant_string
 
-    final_string = relevant_string + unescaped_string[last_sentence_index:-1]
-    last_sentence_index = len(relevant_string)
+    final_string = relevant_string + unescaped_string[state['tts_last_sentence_index']:-1]
+    state['tts_last_sentence_index'] = len(relevant_string)
 
-    # print(f'string: {final_string} ({len(final_string)}); last_sentence_index: {last_sentence_index}\n')
+    # print(f'string: {final_string} ({len(final_string)}); state['tts_last_sentence_index']: {state['tts_last_sentence_index']}\n')
     return final_string
 
 def get_next_sentence(source, start = 0):
