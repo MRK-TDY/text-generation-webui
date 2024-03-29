@@ -22,6 +22,7 @@ api_tls = threading.local()
 def build_parameters(body, chat=False):
 
     generate_params = {
+        'max_history_len': int(body.get('max_history_len', 8)),
         'max_new_tokens': int(body.get('max_new_tokens', body.get('max_length', 250))),
         'auto_max_new_tokens': bool(body.get('auto_max_new_tokens', True)),
         'max_tokens_second': int(body.get('max_tokens_second', 0)),
