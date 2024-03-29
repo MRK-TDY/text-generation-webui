@@ -109,8 +109,16 @@ async def _handle_chat_stream_message(websocket, message):
     knowledge_context = km_script.get_context(user_input=user_input, history=history,
                                               filters=["world", generate_params["name2"]])
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
+    full_internal_history = copy.deepcopy(generate_params['history']['internal'])
+    full_visible_history = copy.deepcopy(generate_params['history']['visible'])
+    max_history_len = generate_params['max_history_len']
+    if len(full_internal_history) > max_history_len:
+        generate_params['history']['internal'] = full_internal_history[-max_history_len:]
+        generate_params['history']['visible'] = full_visible_history[-max_history_len:]
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
+    generate_params['history']['internal'] = full_internal_history
+    generate_params['history']['visible'] = full_visible_history
 
     last_sentence_index = 0
     message_num = 0
