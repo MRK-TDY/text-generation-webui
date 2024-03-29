@@ -72,3 +72,26 @@ gallery-items_per_page: 50
 gallery-open: false
 default_extensions:
 - gallery
+- silero_tts
+# - whisper_stt
+- api
+#- superboogav2
+- Training_PRO
+- intent_detection
+- knowledge_management
+# whisper_stt-whipser_language: chinese
+# whisper_stt-whipser_model: base.en
+# whisper_stt-auto_submit: True
+silero_tts_mode: 'silero'
+silero_tts-speaker: en_56
+# silero_tts-language: English
+silero_tts-model_id: v3_en
+silero_tts-sample_rate: 48000
+silero_tts-device: cuda # cpu, cuda, ipu, xpu, mkldnn, opengl, opencl, ideep, hip, ve, fpga, ort, xla, lazy, vulkan, mps, meta, hpu, mtia, privateuseone
+silero_tts-show_text: True
+silero_tts-autoplay: True
+silero_tts-voice_pitch: medium
+silero_tts-voice_speed: medium
+# silero_tts-local_cache_path: ''
+intent_detection-device: 1
+knowledge_management-knowledge_api_endpoint: http://localhost:8001/api

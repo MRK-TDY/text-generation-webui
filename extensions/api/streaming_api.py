@@ -20,8 +20,8 @@ from modules.text_generation import generate_reply
 from modules.logging_colors import logger
 
 from extensions.silero_tts import script as tts_script
-
 from extensions.intent_detection import script as intent_script
+from extensions.knowledge_management import script as km_script
 
 import re
 
@@ -104,6 +104,11 @@ async def _handle_chat_stream_message(websocket, message):
         await say_verbatim(websocket, user_input, generate_params)
         return
 
+    history = generate_params['history']['internal']
+    history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
+    knowledge_context = km_script.get_context(user_input=user_input, history=history,
+                                              filters=["world", generate_params["name2"]])
+    generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
 
