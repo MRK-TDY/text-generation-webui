@@ -8,7 +8,7 @@ params = {
 }
 
 
-def get_context(user_input: str, history: list, filters: list, top_k: int = 10, history_n: int = 1):
+def get_context(user_input: str, history: list, filters: list, top_k: int = 5, history_n: int = 1):
     data = {
         "query": user_input,
         "history": history,
