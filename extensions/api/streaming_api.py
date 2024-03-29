@@ -108,7 +108,7 @@ async def _handle_chat_stream_message(websocket, message):
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
     knowledge_context = km_script.get_context(user_input=user_input, history=history,
                                               filters=["world", generate_params["name2"]])
-    generate_params["context"] += knowledge_context
+    generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
     generator = generate_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
 

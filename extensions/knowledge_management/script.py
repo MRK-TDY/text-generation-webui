@@ -1,5 +1,5 @@
 import requests
-import json
+import re
 from modules.logging_colors import logger
 
 
@@ -8,7 +8,7 @@ params = {
 }
 
 
-def get_context(user_input: str, history: list, filters: list, top_k: int = 5, history_n: int = 2):
+def get_context(user_input: str, history: list, filters: list, top_k: int = 10, history_n: int = 1):
     data = {
         "query": user_input,
         "history": history,
@@ -22,7 +22,8 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 5, h
         results = requests.get(f"{params['knowledge_api_endpoint']}/search", json=data)
         results = results.json()
         results = results["results"]
-    except Exception:
+    except Exception as e:
+        logger.error(e)
         return ""
 
     if len(results) == 0:
@@ -31,3 +32,10 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 5, h
     context = f"\n{results}\n"
     return context
 
+
+def input_modifier(string, state, is_chat=False):
+    history = state['history']['internal']
+    history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
+    knowledge = get_context(string, history, ["world", state["name2"]])
+    state['context'] = state['context'].replace('<knowledge_injection>', f'{knowledge}')
+    return string
