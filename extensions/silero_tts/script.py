@@ -333,7 +333,7 @@ def say_verbatim_tts(string):
             break
 
     string = tts_preprocessor.preprocess(string or random_sentence())
-    string_output = save_audio_to_file({}, string, "")
+    string_output = save_audio_to_file({}, string, string)
 
     return string_output
 
