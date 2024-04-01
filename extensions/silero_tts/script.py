@@ -287,7 +287,7 @@ def get_next_sentence(source, start = 0):
 
     while i <= L:
         m = M
-        while m > 1:
+        while m >= 1:
             chunk = source[i:i + m]
             if chunk in sentence_stop:
                 return source[start:i + len(chunk)], i + len(chunk)
@@ -324,18 +324,55 @@ def voice_preview(string):
 
 
 def say_verbatim_tts(string):
-    global model, current_params, streaming_state
+    global model, current_params
 
     for i in params:
         if params[i] != current_params[i]:
             model = load_model()
             current_params = params.copy()
             break
+    
+    tts_last_sentence_index = 0
+    final_string = ''
 
-    string = tts_preprocessor.preprocess(string or random_sentence())
-    string_output = save_audio_to_file({}, string, "")
+    while True:
+        sentence, tts_last_sentence_index = get_next_sentence(string, tts_last_sentence_index)
+        if sentence is None:
+            break
 
-    return string_output
+        string_to_voice = sentence
+        print(f'string_to_voice: {string_to_voice} ({len(string_to_voice)})')
+
+        if len(string_to_voice) <= 0:
+            continue
+
+        original_string = string_to_voice
+        string_to_voice = tts_preprocessor.preprocess(string_to_voice)
+
+        if string_to_voice == '':
+            pass
+        else:
+            string_to_voice = save_audio_to_file({}, string_to_voice, original_string)
+
+        final_string += string_to_voice + "\n\n"
+
+    rest_of_sentence = string[tts_last_sentence_index::].strip()
+    if len(rest_of_sentence) > 0:
+
+        string_to_voice = rest_of_sentence
+        print(f'string_to_voice: {string_to_voice} ({len(string_to_voice)})')
+
+        original_string = string_to_voice
+        string_to_voice = tts_preprocessor.preprocess(string_to_voice)
+
+        if string_to_voice == '':
+            pass
+        else:
+            string_to_voice = save_audio_to_file({}, string_to_voice, original_string)
+
+        final_string += string_to_voice + "\n\n"
+        
+    return final_string
 
 
 def language_change(lang):
