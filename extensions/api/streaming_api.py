@@ -14,6 +14,7 @@ from extensions.api.util import (
     try_start_cloudflared,
     with_api_lock
 )
+from extensions.api.tgi_inference import generate_chat_reply as tgi_chat_reply
 from modules import shared
 from modules.chat import generate_chat_reply
 from modules.text_generation import generate_reply
@@ -115,7 +116,10 @@ async def _handle_chat_stream_message(websocket, message):
     if len(full_internal_history) > max_history_len:
         generate_params['history']['internal'] = full_internal_history[-max_history_len:]
         generate_params['history']['visible'] = full_visible_history[-max_history_len:]
-    generator = generate_chat_reply(
+    # text-generation-webui reply
+    # generator = generate_chat_reply(
+    #     user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
+    generator = tgi_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
     generate_params['history']['internal'] = full_internal_history
     generate_params['history']['visible'] = full_visible_history
