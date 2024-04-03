@@ -70,6 +70,8 @@ async def _handle_stream_message(websocket, message):
 async def _handle_chat_stream_message(websocket, message):
     body = json.loads(message)
 
+    logger.info(body)
+
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
     generate_params['stream'] = True
@@ -105,6 +107,7 @@ async def _handle_chat_stream_message(websocket, message):
         await say_verbatim(websocket, user_input, generate_params)
         return
 
+    generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
     history = generate_params['history']['internal']
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
     knowledge_context = km_script.get_context(user_input=user_input, history=history,
