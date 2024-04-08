@@ -2,7 +2,7 @@ import asyncio
 import json
 import ssl
 from threading import Thread
-
+import traceback
 from websockets.server import serve
 import http
 import urllib.parse
@@ -66,7 +66,6 @@ async def _handle_stream_message(websocket, message):
     }))
 
 
-@with_api_lock
 async def _handle_chat_stream_message(websocket, message):
     body = json.loads(message)
 
@@ -129,7 +128,7 @@ async def _handle_chat_stream_message(websocket, message):
 
     last_sentence_index = 0
     message_num = 0
-    for a in generator:
+    async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
                 phrases[i] = re.sub(r'\*.*?\*', '', phrase)
@@ -143,7 +142,7 @@ async def _handle_chat_stream_message(websocket, message):
                 last_sentence_index == generate_params['tts_last_sentence_index']:
                 await asyncio.sleep(0)
                 continue
-            
+
             last_sentence_index = generate_params['tts_last_sentence_index']
 
         await websocket.send(json.dumps({
@@ -160,20 +159,26 @@ async def _handle_chat_stream_message(websocket, message):
         'message_num': message_num
     }))
 
-
 async def _handle_connection(websocket, path):
-
+    tasks = []
     if path == '/api/v1/stream':
         async for message in websocket:
-            await _handle_stream_message(websocket, message)
+            # Create a new task for each message and append it to the tasks list
+            task = asyncio.create_task(_handle_stream_message(websocket, message))
+            tasks.append(task)
 
     elif path == '/api/v1/chat-stream':
         async for message in websocket:
-            await _handle_chat_stream_message(websocket, message)
+            # Create a new task for each message and append it to the tasks list
+            task = asyncio.create_task(_handle_chat_stream_message(websocket, message))
+            tasks.append(task)
 
     else:
         print(f'Streaming api: unknown path: {path}')
         return
+
+    await asyncio.gather(*tasks)
+
 
 
 def get_query_param(path, key):

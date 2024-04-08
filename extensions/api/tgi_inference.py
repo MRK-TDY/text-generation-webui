@@ -3,6 +3,7 @@ from modules.chat import get_stopping_strings, replace_character_names, get_gene
 import modules.shared as shared
 from modules.logging_colors import logger
 from jinja2.sandbox import ImmutableSandboxedEnvironment
+import httpx
 
 import requests
 import html
@@ -18,7 +19,7 @@ class TGIParams:
     api_url = None
 
 
-def generate_chat_reply(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
+async def generate_chat_reply(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
     history = state['history']
     if regenerate or _continue:
         text = ''
@@ -26,11 +27,11 @@ def generate_chat_reply(text, state, regenerate=False, _continue=False, loading_
             yield history
             return
 
-    for history in chatbot_wrapper(text, state, regenerate=regenerate, _continue=_continue, loading_message=loading_message, for_ui=for_ui):
+    async for history in chatbot_wrapper(text, state, regenerate=regenerate, _continue=_continue, loading_message=loading_message, for_ui=for_ui):
         yield history
 
 
-def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
+async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
     history = state['history']
     output = copy.deepcopy(history)
     output = apply_extensions('history', output)
@@ -87,8 +88,8 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
     previous_reply = None
     cropped_reply = None
     visible_reply = None
-    for j, reply in enumerate(generate_reply(prompt, state, stopping_strings=stopping_strings, is_chat=True)):
-
+    j = 0
+    async for reply in generate_reply(prompt, state, stopping_strings=stopping_strings, is_chat=True):
         if previous_reply is None:
             visible_reply = reply
             if state['mode'] in ['chat', 'chat-instruct']:
@@ -119,21 +120,22 @@ def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_mess
                 visible_reply = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
                 output['visible'][-1][1] = visible_reply.lstrip(' ')
                 yield output
+        j += 1
 
     output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
     yield output
 
 
-def generate_reply(*args, **kwargs):
-    shared.generation_lock.acquire()
-    try:
-        for result in _generate_reply(*args, **kwargs):
-            yield result
-    finally:
-        shared.generation_lock.release()
+async def generate_reply(*args, **kwargs):
+    # shared.generation_lock.acquire()
+    # try:
+    async for result in _generate_reply(*args, **kwargs):
+        yield result
+    # finally:
+    #     shared.generation_lock.release()
 
 
-def _generate_reply(question, state, stopping_strings=None, is_chat=False, escape_html=False, for_ui=False):
+async def _generate_reply(question, state, stopping_strings=None, is_chat=False, escape_html=False, for_ui=False):
     if shared.args.verbose:
         logger.info("PROMPT=")
         print(question)
@@ -175,20 +177,27 @@ def _generate_reply(question, state, stopping_strings=None, is_chat=False, escap
         "stop_sequences": all_stop_strings,
     }
     logger.info(all_stop_strings)
-    pattern = re.compile(r'\*\*.*?\*\*|\([^)]*\)|\[.*?\]')
-    with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
+    pattern = re.compile(r'\*.*|\(.+|\[.*')
+    client = httpx.AsyncClient()
+    # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
+    async with client.stream('POST', f'{TGIParams.api_url}/generate-stream', json=payload, timeout=300) as response:
         response.raise_for_status()
         reply = ""
         # Consume the response incrementally
-        for part_reply in response.iter_content(chunk_size=None):
+        # for part_reply in response.iter_content(chunk_size=None):
         # Generate
         # for reply in generate_func(question, original_question, seed, state, stopping_strings, is_chat=is_chat):
-            reply += part_reply.decode('utf-8').replace("</s>", "")
-            reply = pattern.sub('', reply)
+        async for part_reply in response.aiter_bytes():
+            reply += part_reply.decode('utf-8')
             reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
+            stop_found = stop_found or bool(pattern.match(reply))
+            # check if regex match
             if escape_html:
                 reply = html.escape(reply)
+
+            reply_to_yield = reply.replace("</s>", "")
+            reply_to_yield = pattern.sub('', reply_to_yield)
             if is_stream:
                 cur_time = time.time()
 
@@ -199,22 +208,23 @@ def _generate_reply(question, state, stopping_strings=None, is_chat=False, escap
                         time.sleep(diff)
 
                     last_update = time.time()
-                    yield reply
+                    yield reply_to_yield
 
                 # Limit updates to avoid lag in the Gradio UI
                 # API updates are not limited
                 else:
                     if cur_time - last_update > min_update_interval:
                         last_update = cur_time
-                        yield reply
+                        yield reply_to_yield
 
             if stop_found or (state['max_tokens_second'] > 0 and shared.stop_everything):
                 break
 
     if not is_chat:
         reply = apply_extensions('output', reply, state)
-
-    yield reply
+    reply_to_yield = reply.replace("</s>", "")
+    reply_to_yield = pattern.sub('', reply_to_yield)
+    yield reply_to_yield
 
 
 def apply_stopping_strings(reply, all_stop_strings):
