@@ -138,7 +138,7 @@ async def generate_reply(*args, **kwargs):
 async def _generate_reply(question, state, stopping_strings=None, is_chat=False, escape_html=False, for_ui=False):
     if shared.args.verbose:
         logger.info("PROMPT=")
-        print(question)
+        # print(question)
         print()
 
     # Prepare the input
@@ -158,7 +158,6 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
 
     shared.stop_everything = False
     last_update = -1
-    reply = ''
     is_stream = state['stream']
     if len(all_stop_strings) > 0 and not state['stream']:
         state = copy.deepcopy(state)
@@ -177,7 +176,6 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         "stop_sequences": all_stop_strings,
     }
     logger.info(all_stop_strings)
-    pattern = re.compile(r'\*.*|\(.+|\[.*')
     client = httpx.AsyncClient()
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
@@ -190,14 +188,14 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         # for reply in generate_func(question, original_question, seed, state, stopping_strings, is_chat=is_chat):
         async for part_reply in response.aiter_bytes():
             reply += part_reply.decode('utf-8')
-            reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
-            stop_found = stop_found or bool(pattern.match(reply))
+            reply_to_yield, stop_found = apply_stopping_strings(reply, all_stop_strings)
             # check if regex match
             if escape_html:
-                reply = html.escape(reply)
+                reply_to_yield = html.escape(reply_to_yield)
 
-            reply_to_yield = reply.replace("</s>", "")
-            reply_to_yield = pattern.sub('', reply_to_yield)
+            reply_to_yield, regex_stop = clean_reply(reply_to_yield)
+            stop_found = stop_found or regex_stop
+
             if is_stream:
                 cur_time = time.time()
 
@@ -221,9 +219,8 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 break
 
     if not is_chat:
-        reply = apply_extensions('output', reply, state)
-    reply_to_yield = reply.replace("</s>", "")
-    reply_to_yield = pattern.sub('', reply_to_yield)
+        reply_to_yield = apply_extensions('output', reply_to_yield, state)
+    reply_to_yield = clean_reply(reply_to_yield)
     yield reply_to_yield
 
 
@@ -400,3 +397,19 @@ def generate_chat_prompt(user_input, state, **kwargs):
         return prompt, [message['content'] for message in messages]
     else:
         return prompt
+
+
+def clean_reply(reply):
+    patterns = [
+        re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
+        re.compile(r'\*.*|\(.+|\[.*', re.DOTALL),
+        re.compile(r'(<)?\|im(.*)', re.DOTALL),
+        re.compile(r'</s>', re.DOTALL)
+    ]
+
+    stop_found = any(bool(pattern.findall(reply)) for pattern in patterns)
+    for pattern in patterns:
+        reply = pattern.sub('', reply)
+
+    return reply, stop_found
+
