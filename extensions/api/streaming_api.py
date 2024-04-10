@@ -69,7 +69,7 @@ async def _handle_stream_message(websocket, message):
 async def _handle_chat_stream_message(websocket, message):
     body = json.loads(message)
 
-    logger.info(body)
+    # logger.info(body)
 
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
