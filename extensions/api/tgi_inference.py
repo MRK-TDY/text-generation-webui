@@ -196,8 +196,8 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
             if escape_html:
                 reply = html.escape(reply)
 
-            reply_to_yield = reply.replace("</s>", "")
-            reply_to_yield = pattern.sub('', reply_to_yield)
+            reply_to_yield = clean_reply(reply)
+
             if is_stream:
                 cur_time = time.time()
 
@@ -222,8 +222,7 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
 
     if not is_chat:
         reply = apply_extensions('output', reply, state)
-    reply_to_yield = reply.replace("</s>", "")
-    reply_to_yield = pattern.sub('', reply_to_yield)
+    reply_to_yield = clean_reply(reply)
     yield reply_to_yield
 
 
@@ -236,18 +235,18 @@ def apply_stopping_strings(reply, all_stop_strings):
             stop_found = True
             break
 
-    if not stop_found:
-        # If something like "\nYo" is generated just before "\nYou:"
-        # is completed, trim it
-        for string in all_stop_strings:
-            for j in range(len(string) - 1, 0, -1):
-                if reply[-j:] == string[:j]:
-                    reply = reply[:-j]
-                    break
-            else:
-                continue
-
-            break
+    # if not stop_found:
+    #     # If something like "\nYo" is generated just before "\nYou:"
+    #     # is completed, trim it
+    #     for string in all_stop_strings:
+    #         for j in range(len(string) - 1, 0, -1):
+    #             if reply[-j:] == string[:j]:
+    #                 reply = reply[:-j]
+    #                 break
+    #         else:
+    #             continue
+    #
+    #         break
 
     return reply, stop_found
 
@@ -400,3 +399,18 @@ def generate_chat_prompt(user_input, state, **kwargs):
         return prompt, [message['content'] for message in messages]
     else:
         return prompt
+
+
+def clean_reply(reply):
+    patterns = [
+        re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
+        re.compile(r'\*.*|\(.+|\[.*', re.DOTALL),
+        re.compile(r'(<)?\|im(.*)', re.DOTALL),
+        re.compile(r'</s>', re.DOTALL)
+    ]
+
+    for pattern in patterns:
+        reply = pattern.sub('', reply)
+
+    return reply
+
