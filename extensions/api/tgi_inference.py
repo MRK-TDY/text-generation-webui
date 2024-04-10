@@ -188,13 +188,13 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         # for reply in generate_func(question, original_question, seed, state, stopping_strings, is_chat=is_chat):
         async for part_reply in response.aiter_bytes():
             reply += part_reply.decode('utf-8')
-            reply_to_yield, stop_found = apply_stopping_strings(reply, all_stop_strings)
+            reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
             # check if regex match
             if escape_html:
-                reply_to_yield = html.escape(reply_to_yield)
+                reply = html.escape(reply)
 
-            reply_to_yield, regex_stop = clean_reply(reply_to_yield)
-            stop_found = stop_found or regex_stop
+            reply_to_yield, regex_stop = clean_reply(reply)
+            # stop_found = stop_found or regex_stop
 
             if is_stream:
                 cur_time = time.time()
@@ -219,8 +219,8 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 break
 
     if not is_chat:
-        reply_to_yield = apply_extensions('output', reply_to_yield, state)
-    reply_to_yield = clean_reply(reply_to_yield)
+        reply = apply_extensions('output', reply, state)
+    reply_to_yield = clean_reply(reply)
     yield reply_to_yield
 
 
