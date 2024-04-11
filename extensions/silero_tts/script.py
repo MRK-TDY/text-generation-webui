@@ -195,7 +195,9 @@ async def save_audio_to_file(state, string_to_voice, original_string):
         data = response.json()
         audio_file = data["file"]
 
-    return f'<audio src="{audio_file}" controls {autoplay}></audio>'
+    string_to_voice = f'<audio src="{audio_file}" controls {autoplay}></audio>'
+    string_to_voice = f'{string_to_voice}\n\n{original_string}'
+    return string_to_voice
 
 
 async def output_modifier(string, state):

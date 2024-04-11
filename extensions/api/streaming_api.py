@@ -127,7 +127,6 @@ async def _handle_chat_stream_message(websocket, message):
     generate_params['history']['visible'] = full_visible_history
 
     last_sentence_index = 0
-    last_message = ""
     message_num = 0
     async for a in generator:
         for phrases in a["visible"]:
@@ -142,13 +141,10 @@ async def _handle_chat_stream_message(websocket, message):
             if do_sentence_check and \
                 last_sentence_index == generate_params['tts_last_sentence_index']:
                 await asyncio.sleep(0)
-                if a["internal"][-1][-1] == last_message:
-                    break
                 continue
 
             last_sentence_index = generate_params['tts_last_sentence_index']
 
-        last_message = a["internal"][-1][-1]
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
