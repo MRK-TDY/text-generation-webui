@@ -155,7 +155,6 @@ async def _handle_chat_stream_message(websocket, message):
             'history': a
         }))
 
-        await asyncio.sleep(0)
         message_num += 1
 
     await websocket.send(json.dumps({

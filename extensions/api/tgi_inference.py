@@ -117,7 +117,7 @@ async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loadin
             output['internal'][-1] = [text, reply.lstrip(' ')]
             output['visible'][-1] = [visible_text, visible_reply.lstrip(' ')]
             if is_stream:
-                visible_reply = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
+                visible_reply = await apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
                 output['visible'][-1][1] = visible_reply.lstrip(' ')
                 yield output
         j += 1
