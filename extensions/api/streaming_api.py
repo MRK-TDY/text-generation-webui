@@ -161,7 +161,7 @@ async def _handle_chat_stream_message(websocket, message):
 
     except Exception as e:
         await websocket.send(json.dumps({
-            "event": "stream_error",
+            "event": "stream_end",
             "error_message": str(e)
         }))
 
