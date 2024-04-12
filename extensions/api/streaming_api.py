@@ -102,7 +102,7 @@ async def _handle_chat_stream_message(websocket, message):
         do_sentence_check = True
 
     if generate_params['mode'] == "verbatim":
-        print("Verbatim mode is enabled.")
+        logger.info("Verbatim mode is enabled.")
         await say_verbatim(websocket, user_input, generate_params)
         return
 
@@ -252,6 +252,7 @@ def _run_server(port: int, share: bool = False, tunnel_id=str):
 def start_server(port: int, share: bool = False, tunnel_id=str):
     Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True).start()
 
+
 async def say_verbatim(websocket, user_input, state):
 
     # user_input is empty
@@ -260,7 +261,7 @@ async def say_verbatim(websocket, user_input, state):
         sentence = "No input."
     history = state['history']
 
-    sentence_tts = tts_script.say_verbatim_tts(sentence)
+    sentence_tts = await tts_script.say_verbatim_tts(sentence)
 
     internal = [ "", sentence ]
     visible = [ "", sentence_tts ]
