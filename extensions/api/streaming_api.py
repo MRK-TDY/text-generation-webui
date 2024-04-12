@@ -6,6 +6,7 @@ import traceback
 from websockets.server import serve
 import http
 import urllib.parse
+from unidecode import unidecode
 
 import copy
 
@@ -72,6 +73,7 @@ async def _handle_chat_stream_message(websocket, message):
     # logger.info(body)
 
     user_input = body['user_input']
+    user_input = unidecode(user_input)
     generate_params = build_parameters(body, chat=True)
     generate_params['stream'] = True
     regenerate = body.get('regenerate', False)
