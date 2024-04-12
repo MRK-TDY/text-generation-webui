@@ -7,6 +7,7 @@ from pathlib import Path
 import gradio as gr
 import torch
 import elevenlabs
+import httpx
 
 from extensions.silero_tts import tts_preprocessor
 from modules import chat, shared, ui_chat
@@ -74,7 +75,8 @@ params = {
     'autoplay': True,
     'voice_pitch': 'medium',
     'voice_speed': 'medium',
-    'local_cache_path': ''  # User can override the default cache path to something other via settings.json
+    'local_cache_path': '',  # User can override the default cache path to something other via settings.json
+    "api_endpoint": ''
 }
 
 current_params = params.copy()
@@ -161,34 +163,44 @@ def history_modifier(history):
     return history
 
 
-def save_audio_to_file(state, string_to_voice, original_string):
+async def save_audio_to_file(state, string_to_voice, original_string):
     character = "character"
     if 'character_menu' in state:
         character = state['character_menu']
-    output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.wav')
-    prosody = '<prosody rate="{}" pitch="{}">'.format(params['voice_speed'], params['voice_pitch'])
-    silero_input = f'<speak>{prosody}{xmlesc(string_to_voice.lower())}</prosody></speak>'
-    if params['tts_mode'] == "elevenlabs":
-        try:
-            elevenlabs_output_file = Path(f'extensions/silero_tts/outputs/{character}_{int(time.time_ns())}.mp3')
-            audio = elevenlabs.generate(text=string_to_voice, voice=params['elevenlabs_speaker'], api_key=shared.args.elevenlabs_api_key)
-            elevenlabs.save(audio, str(elevenlabs_output_file)) # mp3 format
-            print(f'Elevenlabs audio saved to {elevenlabs_output_file}')
-            audio = AudioSegment.from_file(elevenlabs_output_file, format="mp3")
-            audio.export(output_file, format="wav")
-        except Exception as e:
-            print("Error generating audio with Elevenlabs: ", e)
-            model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
-    else:
-        model.save_wav(ssml_text=silero_input, speaker=params['speaker'], sample_rate=int(params['sample_rate']), audio_path=str(output_file))
-    # autoplay = 'autoplay' if params['autoplay'] else ''
     autoplay = ''
-    string_to_voice = f'<audio src="file/{output_file.as_posix()}" controls {autoplay}></audio>'
-    string_to_voice += f'\n\n{original_string}'
+    payload = {
+        "character": character,
+        "text": string_to_voice,
+        "priorities": []
+    }
+    if params["tts_mode"] == "elevenlabs":
+        payload["priorities"].append(
+            {
+                "engine": "elevenlabs",
+                "voice": params["elevenlabs_speaker"],
+            }
+        )
+    else:
+        payload["priorities"].append(
+            {
+                "engine": "silero",
+                "speaker": params["speaker"],
+                "sample_rate": params["sample_rate"],
+            }
+        )
 
+    async with httpx.AsyncClient() as client:
+        response = await client.post(params["api_endpoint"], json=payload)
+        response.raise_for_status()
+        data = response.json()
+        audio_file = data["file"]
+
+    string_to_voice = f'<audio src="{audio_file}" controls {autoplay}></audio>'
+    string_to_voice = f'{string_to_voice}\n\n{original_string}'
     return string_to_voice
 
-def output_modifier(string, state):
+
+async def output_modifier(string, state):
     global model, current_params, streaming_state
 
     for i in params:
@@ -217,7 +229,7 @@ def output_modifier(string, state):
     if string_to_voice == '':
         pass
     else:
-        string_to_voice = save_audio_to_file(state, string_to_voice, unsaid_string)
+        string_to_voice = await save_audio_to_file(state, string_to_voice, unsaid_string)
 
     relevant_string = string_to_voice + "\n\n"
     if previous_sentence_index != 0:
@@ -229,7 +241,7 @@ def output_modifier(string, state):
     return final_string
 
 
-def output_stream_modifier(string, state):
+async def output_stream_modifier(string, state):
     global model, current_params, streaming_state
 
     for i in params:
@@ -266,7 +278,7 @@ def output_stream_modifier(string, state):
     if string_to_voice == '':
         pass
     else:
-        string_to_voice = save_audio_to_file(state, string_to_voice, original_string)
+        string_to_voice = await save_audio_to_file(state, string_to_voice, original_string)
 
     relevant_string = string_to_voice + "\n\n"
     if previous_sentence_index != 0:
@@ -307,7 +319,7 @@ def random_sentence():
         return random.choice(list(f))
 
 
-def voice_preview(string):
+async def voice_preview(string):
     global model, current_params, streaming_state
 
     for i in params:
@@ -317,13 +329,13 @@ def voice_preview(string):
             break
 
     string = tts_preprocessor.preprocess(string or random_sentence())
-    string_output = save_audio_to_file({}, string, "")
+    string_output = await save_audio_to_file({}, string, "")
     string_output = string_output.replace('controls', 'controls autoplay')
 
     return string_output
 
 
-def say_verbatim_tts(string):
+async def say_verbatim_tts(string):
     global model, current_params
 
     for i in params:
@@ -352,7 +364,7 @@ def say_verbatim_tts(string):
         if string_to_voice == '':
             pass
         else:
-            string_to_voice = save_audio_to_file({}, string_to_voice, original_string)
+            string_to_voice = await save_audio_to_file({}, string_to_voice, original_string)
 
         final_string += string_to_voice + "\n\n"
 
@@ -368,7 +380,7 @@ def say_verbatim_tts(string):
         if string_to_voice == '':
             pass
         else:
-            string_to_voice = save_audio_to_file({}, string_to_voice, original_string)
+            string_to_voice = await save_audio_to_file({}, string_to_voice, original_string)
 
         final_string += string_to_voice + "\n\n"
         

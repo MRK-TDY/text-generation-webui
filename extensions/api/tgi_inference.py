@@ -43,7 +43,8 @@ async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loadin
 
     # Prepare the input
     if not (regenerate or _continue):
-        visible_text = html.escape(text)
+        # visible_text = html.escape(text)
+        visible_text = text
 
         # Apply extensions
         text, visible_text = apply_extensions('chat_input', text, visible_text, state)
@@ -90,20 +91,21 @@ async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loadin
     visible_reply = None
     j = 0
     async for reply in generate_reply(prompt, state, stopping_strings=stopping_strings, is_chat=True):
+        if isinstance(reply, tuple):
+            reply = reply[0]
         if previous_reply is None:
             visible_reply = reply
             if state['mode'] in ['chat', 'chat-instruct']:
                 visible_reply = re.sub("(<USER>|<user>|{{user}})", state['name1'], reply)
-            visible_reply = html.escape(visible_reply)
+            # visible_reply = html.escape(visible_reply)
         else:
             cropped_reply = reply.replace(previous_reply, "")
-
             visible_reply = visible_reply + cropped_reply
 
         previous_reply = reply
 
         if shared.stop_everything:
-            output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
+            output['visible'][-1][1] = await apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
             yield output
             return
 
@@ -111,18 +113,18 @@ async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loadin
             output['internal'][-1] = [text, last_reply[0] + reply]
             output['visible'][-1] = [visible_text, last_reply[1] + visible_reply]
             if is_stream:
-                output['visible'][-1][1] = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
+                output['visible'][-1][1] = await apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
                 yield output
         elif not (j == 0 and visible_reply.strip() == ''):
             output['internal'][-1] = [text, reply.lstrip(' ')]
             output['visible'][-1] = [visible_text, visible_reply.lstrip(' ')]
             if is_stream:
-                visible_reply = apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
+                visible_reply = await apply_extensions('output-stream', output['visible'][-1][1], state, is_chat=True)
                 output['visible'][-1][1] = visible_reply.lstrip(' ')
                 yield output
         j += 1
 
-    output['visible'][-1][1] = apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
+    output['visible'][-1][1] = await apply_extensions('output', output['visible'][-1][1], state, is_chat=True)
     yield output
 
 
@@ -190,8 +192,8 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
             reply += part_reply.decode('utf-8')
             reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
             # check if regex match
-            if escape_html:
-                reply = html.escape(reply)
+            # if escape_html:
+            #     reply = html.escape(reply)
 
             reply_to_yield, regex_stop = clean_reply(reply)
             # stop_found = stop_found or regex_stop
@@ -219,7 +221,7 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 break
 
     if not is_chat:
-        reply = apply_extensions('output', reply, state)
+        reply = await apply_extensions('output', reply, state)
     reply_to_yield = clean_reply(reply)
     yield reply_to_yield
 
