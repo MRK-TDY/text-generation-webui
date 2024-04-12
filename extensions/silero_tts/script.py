@@ -295,8 +295,10 @@ async def output_stream_modifier(string, state):
     # print(f'string: {final_string} ({len(final_string)}); state['tts_last_sentence_index']: {state['tts_last_sentence_index']}\n')
     return final_string
 
+
 def get_next_sentence(source, start = 0):
-    sentence_stop = ('...', '.', '?', '!', '!!!', '!!', '??', '?!', '?!?')
+    sentence_stop = ('...', '.', '?', '!', '!!!', '!!', '??', '?!', '?!?',
+                     '."', '.\'', '!"', '!\'', '?"', '?\'')
 
     i = start
     M = max(len(s) for s in sentence_stop)
