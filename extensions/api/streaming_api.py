@@ -128,35 +128,45 @@ async def _handle_chat_stream_message(websocket, message):
 
     last_sentence_index = 0
     message_num = 0
-    async for a in generator:
-        for phrases in a["visible"]:
-            for i, phrase in enumerate(phrases):
-                phrases[i] = re.sub(r'\*.*?\*', '', phrase)
-        for phrases in a["internal"]:
-            for i, phrase in enumerate(phrases):
-                phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+    try:
+        async for a in generator:
+            for phrases in a["visible"]:
+                for i, phrase in enumerate(phrases):
+                    phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+            for phrases in a["internal"]:
+                for i, phrase in enumerate(phrases):
+                    phrases[i] = re.sub(r'\*.*?\*', '', phrase)
 
-        if 'tts_last_sentence_index' in generate_params:
-            # if last visible phrase is empty, skip
-            if do_sentence_check and \
-                last_sentence_index == generate_params['tts_last_sentence_index']:
-                await asyncio.sleep(0)
-                continue
+            if 'tts_last_sentence_index' in generate_params:
+                # if last visible phrase is empty, skip
+                if do_sentence_check and \
+                    last_sentence_index == generate_params['tts_last_sentence_index']:
+                    await asyncio.sleep(0)
+                    continue
 
-            last_sentence_index = generate_params['tts_last_sentence_index']
+                last_sentence_index = generate_params['tts_last_sentence_index']
+
+            await websocket.send(json.dumps({
+                'event': 'text_stream',
+                'message_num': message_num,
+                'history': a
+            }))
+
+            message_num += 1
 
         await websocket.send(json.dumps({
-            'event': 'text_stream',
-            'message_num': message_num,
-            'history': a
+            'event': 'stream_end',
+            'message_num': message_num
         }))
 
-        message_num += 1
+    except Exception as e:
+        await websocket.send(json.dumps({
+            "event": "stream_end",
+            'message_num': message_num,
+            "error_message": str(e)
+        }))
 
-    await websocket.send(json.dumps({
-        'event': 'stream_end',
-        'message_num': message_num
-    }))
+
 
 async def _handle_connection(websocket, path):
     tasks = []
