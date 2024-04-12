@@ -174,12 +174,17 @@ async def save_audio_to_file(state, string_to_voice, original_string):
         "priorities": []
     }
     if params["tts_mode"] == "elevenlabs":
-        payload["priorities"].append(
+        payload["priorities"].extend([
             {
                 "engine": "elevenlabs",
                 "voice": params["elevenlabs_speaker"],
+            },
+            {
+                "engine": "silero",
+                "speaker": params["speaker"],
+                "sample_rate": params["sample_rate"],
             }
-        )
+        ])
     else:
         payload["priorities"].append(
             {
