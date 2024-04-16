@@ -33,9 +33,3 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 6, h
     return context
 
 
-def input_modifier(string, state, is_chat=False):
-    history = state['history']['internal']
-    history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
-    knowledge = get_context(string, history, ["world", state["name2"]])
-    state['context'] = state['context'].replace('<knowledge_injection>', f'{knowledge}')
-    return string
