@@ -80,8 +80,8 @@ async def _handle_chat_stream_message(websocket, message):
     if len(generate_params['intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
         await check_intent(websocket, user_input, generate_params)
-        # if generate_params['history']['triggered_intent_id']:
-        #     return
+        if generate_params['history']['triggered_intent_id']:
+            return
 
     do_sentence_check = False
     tts_script.params.update({
@@ -304,7 +304,6 @@ async def check_intent(websocket, user_input, state):
         if max_intent is None or intent_score > intents[max_intent]:
             max_intent = intent_id
 
-    # old intent detection
     # tts_script.params.update({
     #     "tts_mode": "off"
     # })
@@ -386,22 +385,22 @@ async def check_intent(websocket, user_input, state):
         return
 
     history['triggered_intent_id'] = max_intent
-    # # fix history
-    # internal = [ user_input, "" ]
-    # history['internal'].append(internal)
-    # history['visible'].append(internal)
+    # fix history
+    internal = [ user_input, "" ]
+    history['internal'].append(internal)
+    history['visible'].append(internal)
 
-    # message_num = 0
-    # await websocket.send(json.dumps({
-    #     'event': 'text_stream',
-    #     'message_num': message_num,
-    #     'history': history
-    # }))
-    #
-    # await asyncio.sleep(0)
-    # message_num += 1
-    #
-    # await websocket.send(json.dumps({
-    #     'event': 'stream_end',
-    #     'message_num': message_num
-    # }))
+    message_num = 0
+    await websocket.send(json.dumps({
+        'event': 'text_stream',
+        'message_num': message_num,
+        'history': history
+    }))
+
+    await asyncio.sleep(0)
+    message_num += 1
+
+    await websocket.send(json.dumps({
+        'event': 'stream_end',
+        'message_num': message_num
+    }))
