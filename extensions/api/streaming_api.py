@@ -8,6 +8,7 @@ import http
 import urllib.parse
 
 import copy
+import secrets
 
 from extensions.api.util import (
     build_parameters,
@@ -65,6 +66,7 @@ async def _handle_stream_message(websocket, message):
         'message_num': message_num
     }))
 
+modes = ['chat', 'chat-instruct', 'instruct', 'verbatim', 'start_interaction', 'stop_interaction', 'start_session']
 
 async def _handle_chat_stream_message(websocket, message):
     body = json.loads(message)
@@ -76,6 +78,42 @@ async def _handle_chat_stream_message(websocket, message):
     generate_params['stream'] = True
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
+
+    if generate_params['mode'] not in modes:
+        generate_params['mode'] = "chat-instruct"
+
+    if generate_params['mode'] == "start_session":
+        # check generate_params['player_id'] for the key to identify the player.
+        # if non existent create new.
+        # if key is defined but no data is available, assume new.
+
+        player_id = body.get('player_id', '')
+        if not player_id:
+            player_id = secrets.token_urlsafe(16)
+
+        await websocket.send(json.dumps({
+            'event': 'stream_start_session',
+            'message_num': 0,
+            'player_id': player_id
+        }))
+        return
+
+    if generate_params['mode'] == "start_interaction":
+        # we might not need this, but just in case.
+        await websocket.send(json.dumps({
+            'event': 'stream_start_interaction',
+            'message_num': 0
+        }))
+        return
+    
+    if generate_params['mode'] == "stop_interaction":
+        # update the memory system with the current history.
+        await websocket.send(json.dumps({
+            'event': 'stream_stop_interaction',
+            'message_num': 0
+        }))
+        return
+    
 
     if len(generate_params['intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
