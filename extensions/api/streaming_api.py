@@ -284,6 +284,7 @@ async def say_verbatim(websocket, user_input, state):
         'message_num': message_num
     }))
 
+
 async def check_intent(websocket, user_input, state):
     history = state['history']
     history['triggered_intent_id'] = ""
@@ -297,7 +298,7 @@ async def check_intent(websocket, user_input, state):
 
     intents = {}
     for intent in state['intents']:
-        intents[intent['id']] = intent_script.intent_similarity(user_input, intent['training_phrases'])
+        intents[intent['id']] = await intent_script.intent_similarity(user_input, intent['training_phrases'])
     max_intent = None
     for intent_id, intent_score in intents.items():
         if max_intent is None or intent_score > intents[max_intent]:

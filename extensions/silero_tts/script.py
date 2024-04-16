@@ -76,7 +76,8 @@ params = {
     'voice_pitch': 'medium',
     'voice_speed': 'medium',
     'local_cache_path': '',  # User can override the default cache path to something other via settings.json
-    "api_endpoint": ''
+    'api_endpoint': '',
+
 }
 
 current_params = params.copy()
@@ -101,16 +102,26 @@ def xmlesc(txt):
     return txt.translate(table)
 
 
+def get_device():
+    device = int(params['device'])
+    if torch.cuda.is_available() and device < torch.cuda.device_count():
+        device = torch.device(f"cuda:{device}")
+    else:
+        device = torch.device("cpu")
+    return device
+
+
 def load_model():
     torch_cache_path = torch.hub.get_dir() if params['local_cache_path'] == '' else params['local_cache_path']
     model_path = torch_cache_path + "/snakers4_silero-models_master/src/silero/model/" + params['model_id'] + ".pt"
+    device = get_device()
     if Path(model_path).is_file():
         print(f'\nUsing Silero TTS cached checkpoint found at {torch_cache_path}')
         model, example_text = torch.hub.load(repo_or_dir=torch_cache_path + '/snakers4_silero-models_master/', model='silero_tts', language=languages[params['language']]["lang_id"], speaker=params['model_id'], source='local', path=model_path, force_reload=True)
     else:
         print(f'\nSilero TTS cache not found at {torch_cache_path}. Attempting to download...')
         model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models', model='silero_tts', language=languages[params['language']]["lang_id"], speaker=params['model_id'])
-    model.to(params['device'])
+    model.to(device)
     return model
 
 

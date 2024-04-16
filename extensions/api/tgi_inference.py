@@ -28,6 +28,8 @@ async def generate_chat_reply(text, state, regenerate=False, _continue=False, lo
             return
 
     async for history in chatbot_wrapper(text, state, regenerate=regenerate, _continue=_continue, loading_message=loading_message, for_ui=for_ui):
+        history['visible'][-1][1], _ = clean_reply(history['visible'][-1][1])
+        history['internal'][-1][1], _ = clean_reply(history['internal'][-1][1])
         yield history
 
 
@@ -89,10 +91,9 @@ async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loadin
     previous_reply = None
     cropped_reply = None
     visible_reply = None
+    stop_found = False
     j = 0
     async for reply in generate_reply(prompt, state, stopping_strings=stopping_strings, is_chat=True):
-        if isinstance(reply, tuple):
-            reply = reply[0]
         if previous_reply is None:
             visible_reply = reply
             if state['mode'] in ['chat', 'chat-instruct']:
@@ -195,9 +196,6 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
             # if escape_html:
             #     reply = html.escape(reply)
 
-            reply_to_yield, regex_stop = clean_reply(reply)
-            # stop_found = stop_found or regex_stop
-
             if is_stream:
                 cur_time = time.time()
 
@@ -208,22 +206,21 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                         time.sleep(diff)
 
                     last_update = time.time()
-                    yield reply_to_yield
+                    yield reply
 
                 # Limit updates to avoid lag in the Gradio UI
                 # API updates are not limited
                 else:
                     if cur_time - last_update > min_update_interval:
                         last_update = cur_time
-                        yield reply_to_yield
+                        yield reply
 
             if stop_found or (state['max_tokens_second'] > 0 and shared.stop_everything):
                 break
 
     if not is_chat:
         reply = await apply_extensions('output', reply, state)
-    reply_to_yield = clean_reply(reply)
-    yield reply_to_yield
+    yield reply
 
 
 def apply_stopping_strings(reply, all_stop_strings):
