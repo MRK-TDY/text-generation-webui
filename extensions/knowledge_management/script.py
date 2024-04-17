@@ -1,4 +1,5 @@
 import requests
+import httpx
 import re
 from modules.logging_colors import logger
 
@@ -8,7 +9,7 @@ params = {
 }
 
 
-def get_context(user_input: str, history: list, filters: list, top_k: int = 6, history_n: int = 1):
+async def get_context(user_input: str, history: list, filters: list, top_k: int = 6, history_n: int = 1):
     data = {
         "query": user_input,
         "history": history,
@@ -19,9 +20,10 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 6, h
         "history_n": history_n
     }
     try:
-        results = requests.get(f"{params['knowledge_api_endpoint']}/search", json=data)
-        results = results.json()
-        results = results["results"]
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{params['knowledge_api_endpoint']}/search", json=data)
+            results = response.json()
+            results = results["results"]
     except Exception as e:
         logger.error(e)
         return ""
@@ -33,3 +35,11 @@ def get_context(user_input: str, history: list, filters: list, top_k: int = 6, h
     return context
 
 
+async def add_memory(entries):
+    data = {
+        "entries": entries
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{params['knowledge_api_endpoint']}/add", json=data)
+
+    return response

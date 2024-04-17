@@ -172,11 +172,17 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
 
     payload = {
         "prompt": question,
-        "max_new_tokens": state['max_new_tokens'],
-        "top_p": state['top_p'],
-        "top_k": state['top_k'],
-        "repetition_penalty": state['repetition_penalty'],
-        "stop_sequences": all_stop_strings,
+        "priorities": [
+            {
+                "engine": "tgi",
+                "max_new_tokens": state['max_new_tokens'],
+                "top_p": state['top_p'],
+                "top_k": state['top_k'],
+                "repetition_penalty": state['repetition_penalty'],
+                "stop_sequences": all_stop_strings,
+            }
+        ]
+
     }
     logger.info(all_stop_strings)
     client = httpx.AsyncClient()

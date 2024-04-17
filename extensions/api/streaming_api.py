@@ -6,6 +6,7 @@ import traceback
 from websockets.server import serve
 import http
 import urllib.parse
+import httpx
 
 import copy
 import secrets
@@ -68,54 +69,72 @@ async def _handle_stream_message(websocket, message):
 
 modes = ['chat', 'chat-instruct', 'instruct', 'verbatim', 'start_interaction', 'stop_interaction', 'start_session']
 
-async def _handle_chat_stream_message(websocket, message):
-    body = json.loads(message)
 
-    # logger.info(body)
+async def mode_start_session(websocket, body):
+    # check generate_params['player_id'] for the key to identify the player.
+    # if non existent create new.
+    # if key is defined but no data is available, assume new.
 
+    player_id = body.get('player_id', '')
+    if not player_id:
+        player_id = secrets.token_urlsafe(16)
+
+    await websocket.send(json.dumps({
+        'event': 'stream_start_session',
+        'message_num': 0,
+        'player_id': player_id
+    }))
+    return
+
+
+async def mode_start_interaction(websocket):
+    # we might not need this, but just in case.
+    await websocket.send(json.dumps({
+        'event': 'stream_start_interaction',
+        'message_num': 0
+    }))
+    return
+
+
+async def mode_stop_interaction(websocket, body):
+    # update the memory system with the current history.
+    history = body['history']['internal']
+    player_id = body.get('player_id', '')
+    player = body.get("name1")
+    npc = body.get("name2")
+
+    entries = []
+    text = ""
+    for dialogue_round in history:
+        text += f"{player}: {dialogue_round[0]}\n"
+        text += f"{npc}: {dialogue_round[1]}\n"
+
+    entry = {
+        "text": text,
+        "payload": {
+            "filter_key": f"{npc}_{player_id}"
+        }
+    }
+    entries.append(entry)
+
+    await km_script.add_memory(entries)
+
+    await websocket.send(json.dumps({
+        'event': 'stream_stop_interaction',
+        'message_num': 0
+    }))
+    return
+
+
+async def mode_chat_any(websocket, body):
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
     generate_params['stream'] = True
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
-    if generate_params['mode'] not in modes:
-        generate_params['mode'] = "chat-instruct"
-
-    if generate_params['mode'] == "start_session":
-        # check generate_params['player_id'] for the key to identify the player.
-        # if non existent create new.
-        # if key is defined but no data is available, assume new.
-
-        player_id = body.get('player_id', '')
-        if not player_id:
-            player_id = secrets.token_urlsafe(16)
-
-        await websocket.send(json.dumps({
-            'event': 'stream_start_session',
-            'message_num': 0,
-            'player_id': player_id
-        }))
-        return
-
-    if generate_params['mode'] == "start_interaction":
-        # we might not need this, but just in case.
-        await websocket.send(json.dumps({
-            'event': 'stream_start_interaction',
-            'message_num': 0
-        }))
-        return
-    
-    if generate_params['mode'] == "stop_interaction":
-        # update the memory system with the current history.
-        await websocket.send(json.dumps({
-            'event': 'stream_stop_interaction',
-            'message_num': 0
-        }))
-        return
-    
-
-    if len(generate_params['intents']) > 0 and (generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
+    if len(generate_params['intents']) > 0 and (
+            generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
         await check_intent(websocket, user_input, generate_params)
         if generate_params['history']['triggered_intent_id']:
@@ -145,10 +164,13 @@ async def _handle_chat_stream_message(websocket, message):
         return
 
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
+    player_id = body.get('player_id', '')
+    npc = generate_params.get("name2")
     history = generate_params['history']['internal']
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
-    knowledge_context = km_script.get_context(user_input=user_input, history=history,
-                                              filters=["world", generate_params["name2"]])
+    knowledge_context = await km_script.get_context(user_input=user_input, history=history,
+                                                    filters=["world", npc, f"{npc}_{player_id}"], top_k=5)
+
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
     full_internal_history = copy.deepcopy(generate_params['history']['internal'])
     full_visible_history = copy.deepcopy(generate_params['history']['visible'])
@@ -166,44 +188,64 @@ async def _handle_chat_stream_message(websocket, message):
 
     last_sentence_index = 0
     message_num = 0
-    try:
-        async for a in generator:
-            for phrases in a["visible"]:
-                for i, phrase in enumerate(phrases):
-                    phrases[i] = re.sub(r'\*.*?\*', '', phrase)
-            for phrases in a["internal"]:
-                for i, phrase in enumerate(phrases):
-                    phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+    async for a in generator:
+        for phrases in a["visible"]:
+            for i, phrase in enumerate(phrases):
+                phrases[i] = re.sub(r'\*.*?\*', '', phrase)
+        for phrases in a["internal"]:
+            for i, phrase in enumerate(phrases):
+                phrases[i] = re.sub(r'\*.*?\*', '', phrase)
 
-            if 'tts_last_sentence_index' in generate_params:
-                # if last visible phrase is empty, skip
-                if do_sentence_check and \
+        if 'tts_last_sentence_index' in generate_params:
+            # if last visible phrase is empty, skip
+            if do_sentence_check and \
                     last_sentence_index == generate_params['tts_last_sentence_index']:
-                    await asyncio.sleep(0)
-                    continue
+                await asyncio.sleep(0)
+                continue
 
-                last_sentence_index = generate_params['tts_last_sentence_index']
-
-            await websocket.send(json.dumps({
-                'event': 'text_stream',
-                'message_num': message_num,
-                'history': a
-            }))
-
-            message_num += 1
+            last_sentence_index = generate_params['tts_last_sentence_index']
 
         await websocket.send(json.dumps({
-            'event': 'stream_end',
-            'message_num': message_num
+            'event': 'text_stream',
+            'message_num': message_num,
+            'history': a
         }))
 
+        message_num += 1
+
+    await websocket.send(json.dumps({
+        'event': 'stream_end',
+        'message_num': message_num
+    }))
+
+
+async def _handle_chat_stream_message(websocket, message):
+    body = json.loads(message)
+    # logger.info(body)
+
+    MODE_MAP = {
+        "start_session": mode_start_session,
+        "start_interaction": mode_start_interaction,
+        "stop_interaction": mode_stop_interaction,
+        "chat": mode_chat_any,
+        "chat-instruct": mode_chat_any,
+    }
+
+    generate_params = build_parameters(body, chat=True)
+
+    mode = generate_params.get('mode', '')
+    if mode not in modes:
+        mode = "chat-instruct"
+
+    try:
+        await MODE_MAP[mode](websocket, body)
+        return
     except Exception as e:
+        logger.error(traceback.format_exc())
         await websocket.send(json.dumps({
             "event": "stream_end",
-            'message_num': message_num,
             "error_message": str(e)
         }))
-
 
 
 async def _handle_connection(websocket, path):
