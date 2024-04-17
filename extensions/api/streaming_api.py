@@ -229,6 +229,8 @@ async def _handle_chat_stream_message(websocket, message):
         "stop_interaction": mode_stop_interaction,
         "chat": mode_chat_any,
         "chat-instruct": mode_chat_any,
+        "verbatim": mode_chat_any,
+        "instruct": mode_chat_any,
     }
 
     generate_params = build_parameters(body, chat=True)
