@@ -87,7 +87,7 @@ async def mode_start_session(websocket, body):
     return
 
 
-async def mode_start_interaction(websocket):
+async def mode_start_interaction(websocket, body):
     # we might not need this, but just in case.
     await websocket.send(json.dumps({
         'event': 'stream_start_interaction',
