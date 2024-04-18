@@ -103,9 +103,18 @@ async def mode_stop_interaction(websocket, body):
     player = body.get("name1")
     npc = body.get("name2")
 
+    latest_history_index = body['history'].get("latest_history_index", 0)
+    relevant_history = history[latest_history_index::]
+    if len(relevant_history) == 0:
+        await websocket.send(json.dumps({
+            'event': 'stream_stop_interaction',
+            'message_num': 0
+        }))
+        return
+
     entries = []
     text = ""
-    for dialogue_round in history:
+    for dialogue_round in relevant_history:
         text += f"{player}: {dialogue_round[0]}\n"
         text += f"{npc}: {dialogue_round[1]}\n"
 
@@ -113,7 +122,8 @@ async def mode_stop_interaction(websocket, body):
         "text": text,
         "payload": {
             "filter_key": f"{npc}_{player_id}"
-        }
+        },
+        "summarize": True
     }
     entries.append(entry)
 
@@ -168,8 +178,14 @@ async def mode_chat_any(websocket, body):
     npc = generate_params.get("name2")
     history = generate_params['history']['internal']
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
-    knowledge_context = await km_script.get_context(user_input=user_input, history=history,
-                                                    filters=["world", npc, f"{npc}_{player_id}"], top_k=5)
+
+    character_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
+                                                              filters=["world", npc,], top_k=3)
+    player_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
+                                                           filters=[f"{npc}_{player_id}"], top_k=2)
+    logger.info(character_knowledge_context)
+    logger.info(player_knowledge_context)
+    knowledge_context = character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
     full_internal_history = copy.deepcopy(generate_params['history']['internal'])
@@ -220,9 +236,6 @@ async def mode_chat_any(websocket, body):
 
 
 async def _handle_chat_stream_message(websocket, message):
-    body = json.loads(message)
-    # logger.info(body)
-
     MODE_MAP = {
         "start_session": mode_start_session,
         "start_interaction": mode_start_interaction,
@@ -233,13 +246,15 @@ async def _handle_chat_stream_message(websocket, message):
         "instruct": mode_chat_any,
     }
 
-    generate_params = build_parameters(body, chat=True)
-
-    mode = generate_params.get('mode', '')
-    if mode not in modes:
-        mode = "chat-instruct"
-
     try:
+        body = json.loads(message)
+        # logger.info(body)
+        generate_params = build_parameters(body, chat=True)
+
+        mode = generate_params.get('mode', '')
+        if mode not in modes:
+            mode = "chat-instruct"
+
         await MODE_MAP[mode](websocket, body)
         return
     except Exception as e:
