@@ -1,19 +1,20 @@
-from modules.extensions import apply_extensions
-from modules.chat import get_stopping_strings, replace_character_names, get_generation_prompt, get_max_prompt_length, get_encoded_length
-import modules.shared as shared
-from modules.logging_colors import logger
-from jinja2.sandbox import ImmutableSandboxedEnvironment
-import httpx
-
-import requests
-import html
+import ast
 import copy
 import re
-import ast
 import time
 from functools import partial
 
+import httpx
+from jinja2.sandbox import ImmutableSandboxedEnvironment
+
+import modules.shared as shared
+from modules.chat import get_stopping_strings, replace_character_names, get_generation_prompt, get_max_prompt_length, \
+    get_encoded_length
+from modules.extensions import apply_extensions
+from modules.logging_colors import logger
+
 jinja_env = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+
 
 class TGIParams:
     api_url = None
@@ -28,7 +29,7 @@ async def generate_chat_reply(text, state, regenerate=False, _continue=False, lo
             return
 
     async for history in chatbot_wrapper(text, state, regenerate=regenerate, _continue=_continue, loading_message=loading_message, for_ui=for_ui):
-        history['visible'][-1][1], _ = clean_reply(history['visible'][-1][1])
+        history['visible'][-1][1], stop_found = clean_reply(history['visible'][-1][1])
         history['internal'][-1][1], _ = clean_reply(history['internal'][-1][1])
         yield history
 
@@ -185,9 +186,9 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
 
     }
     logger.info(all_stop_strings)
-    client = httpx.AsyncClient()
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
+    client = httpx.AsyncClient()
     async with client.stream('POST', f'{TGIParams.api_url}/generate-stream', json=payload, timeout=300) as response:
         response.raise_for_status()
         reply = ""
@@ -198,6 +199,7 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         async for part_reply in response.aiter_bytes():
             reply += part_reply.decode('utf-8')
             reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
+            stop_found = stop_found or find_stop(reply)
             # check if regex match
             # if escape_html:
             #     reply = html.escape(reply)
@@ -222,8 +224,11 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                         yield reply
 
             if stop_found or (state['max_tokens_second'] > 0 and shared.stop_everything):
+                # disconnect client
+                await client.aclose()
                 break
 
+    await client.aclose()
     if not is_chat:
         reply = await apply_extensions('output', reply, state)
     yield reply
@@ -252,6 +257,7 @@ def apply_stopping_strings(reply, all_stop_strings):
             break
 
     return reply, stop_found
+
 
 def generate_chat_prompt(user_input, state, **kwargs):
     impersonate = kwargs.get('impersonate', False)
@@ -409,6 +415,7 @@ def clean_reply(reply):
         re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
         re.compile(r'\*.*|\(.+|\[.*', re.DOTALL),
         re.compile(r'(<)?\|im(.*)', re.DOTALL),
+        re.compile(r'(<)?\|eot(.*)', re.DOTALL),
         re.compile(r'</s>', re.DOTALL)
     ]
 
@@ -418,3 +425,14 @@ def clean_reply(reply):
 
     return reply, stop_found
 
+
+def find_stop(reply):
+    patterns = [
+        re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
+        re.compile(r'(<)?\|im(.*)', re.DOTALL),
+        re.compile(r'(<)?\|eot(.*)', re.DOTALL),
+        re.compile(r'</s>', re.DOTALL)
+    ]
+
+    stop_found = any(bool(pattern.findall(reply)) for pattern in patterns)
+    return stop_found
