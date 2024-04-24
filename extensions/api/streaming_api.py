@@ -184,8 +184,6 @@ async def mode_chat_any(websocket, body):
         km_script.get_context(user_input=user_input, history=history, filters=["world", npc,], top_k=5),
         km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=3)
     )
-    logger.info(character_knowledge_context)
-    logger.info(player_knowledge_context)
     knowledge_context = character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
