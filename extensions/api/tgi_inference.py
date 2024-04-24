@@ -171,6 +171,7 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
     if state.get('max_updates_second', 0) > 0:
         min_update_interval = 1 / state['max_updates_second']
 
+    all_stop_strings.append("<|eot_id|>")
     payload = {
         "prompt": question,
         "priorities": [
