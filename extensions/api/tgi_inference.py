@@ -418,13 +418,14 @@ def clean_reply(reply):
         re.compile(r'\[.*?(]|$)', re.DOTALL),
         re.compile(r'(<)?\|im(.*)', re.DOTALL),
         re.compile(r'(<)?\|eot(.*)', re.DOTALL),
-        re.compile(r'</s>', re.DOTALL)
+        re.compile(r'</s>', re.DOTALL),
+        re.compile(r'\|.*', re.DOTALL),
     ]
 
     for pattern in patterns:
         reply = pattern.sub('', reply)
 
-    return reply
+    return reply.strip()
 
 
 def find_stop(reply):

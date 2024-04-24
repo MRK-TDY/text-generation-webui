@@ -180,10 +180,10 @@ async def mode_chat_any(websocket, body):
     history = generate_params['history']['internal']
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
 
-    character_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
-                                                              filters=["world", npc,], top_k=5)
-    player_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
-                                                           filters=[f"{npc}_{player_id}"], top_k=3)
+    character_knowledge_context, player_knowledge_context = await asyncio.gather(
+        km_script.get_context(user_input=user_input, history=history, filters=["world", npc,], top_k=5),
+        km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=3)
+    )
     logger.info(character_knowledge_context)
     logger.info(player_knowledge_context)
     knowledge_context = character_knowledge_context + player_knowledge_context
