@@ -174,6 +174,11 @@ async def mode_chat_any(websocket, body):
         await say_verbatim(websocket, message, generate_params)
         return
 
+    max_history = 8
+    if len(generate_params['history']['internal']) > max_history:
+        generate_params['history']['internal'] = generate_params['history']['internal'][-max_history:]
+        generate_params['history']['visible'] = generate_params['history']['visible'][-max_history:]
+
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
     player_id = body.get('player_id', '')
     npc = generate_params.get("name2")
@@ -187,8 +192,19 @@ async def mode_chat_any(websocket, body):
     knowledge_context = character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
-    generate_params["context"] = generate_params["context"].replace("<awareness_injection>", "")
-    generate_params["context"] = generate_params["context"].replace("<needs_injection>", "")
+
+    awareness_injection = ""
+    for attr, value in generate_params["awareness"].items():
+        awareness_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<awareness_injection>", awareness_injection)
+    needs_injection = ""
+    for attr, value in generate_params["wants"].items():
+        needs_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
+    extra_context_injection = ""
+    for attr, value in generate_params["extra_context"].items():
+        extra_context_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
 
     full_internal_history = copy.deepcopy(generate_params['history']['internal'])
     full_visible_history = copy.deepcopy(generate_params['history']['visible'])
