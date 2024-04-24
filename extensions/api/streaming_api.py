@@ -18,7 +18,7 @@ from extensions.api.util import (
 )
 from extensions.api.tgi_inference import generate_chat_reply as tgi_chat_reply
 from modules import shared
-from modules.chat import generate_chat_reply
+from modules.chat import replace_character_names
 from modules.text_generation import generate_reply
 from modules.logging_colors import logger
 
@@ -170,7 +170,8 @@ async def mode_chat_any(websocket, body):
 
     if generate_params['mode'] == "verbatim":
         logger.info("Verbatim mode is enabled.")
-        await say_verbatim(websocket, user_input, generate_params)
+        message = replace_character_names(user_input, generate_params['name1'], generate_params['name2'])
+        await say_verbatim(websocket, message, generate_params)
         return
 
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
@@ -180,14 +181,17 @@ async def mode_chat_any(websocket, body):
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
 
     character_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
-                                                              filters=["world", npc,], top_k=3)
+                                                              filters=["world", npc,], top_k=5)
     player_knowledge_context = await km_script.get_context(user_input=user_input, history=history,
-                                                           filters=[f"{npc}_{player_id}"], top_k=2)
+                                                           filters=[f"{npc}_{player_id}"], top_k=3)
     logger.info(character_knowledge_context)
     logger.info(player_knowledge_context)
     knowledge_context = character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
+    generate_params["context"] = generate_params["context"].replace("<awareness_injection>", "")
+    generate_params["context"] = generate_params["context"].replace("<needs_injection>", "")
+
     full_internal_history = copy.deepcopy(generate_params['history']['internal'])
     full_visible_history = copy.deepcopy(generate_params['history']['visible'])
     max_history_len = generate_params['max_history_len']
