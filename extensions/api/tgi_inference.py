@@ -29,8 +29,8 @@ async def generate_chat_reply(text, state, regenerate=False, _continue=False, lo
             return
 
     async for history in chatbot_wrapper(text, state, regenerate=regenerate, _continue=_continue, loading_message=loading_message, for_ui=for_ui):
-        history['visible'][-1][1], stop_found = clean_reply(history['visible'][-1][1])
-        history['internal'][-1][1], _ = clean_reply(history['internal'][-1][1])
+        history['visible'][-1][1] = clean_reply(history['visible'][-1][1])
+        history['internal'][-1][1] = clean_reply(history['internal'][-1][1])
         yield history
 
 
@@ -413,17 +413,18 @@ def generate_chat_prompt(user_input, state, **kwargs):
 def clean_reply(reply):
     patterns = [
         re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
-        re.compile(r'\*.*|\(.+|\[.*', re.DOTALL),
+        re.compile(r'\*.*?(\*|$)', re.DOTALL),
+        re.compile(r'\(.*?(\)|$)', re.DOTALL),
+        re.compile(r'\[.*?(]|$)', re.DOTALL),
         re.compile(r'(<)?\|im(.*)', re.DOTALL),
         re.compile(r'(<)?\|eot(.*)', re.DOTALL),
         re.compile(r'</s>', re.DOTALL)
     ]
 
-    stop_found = any(bool(pattern.findall(reply)) for pattern in patterns)
     for pattern in patterns:
         reply = pattern.sub('', reply)
 
-    return reply, stop_found
+    return reply
 
 
 def find_stop(reply):
