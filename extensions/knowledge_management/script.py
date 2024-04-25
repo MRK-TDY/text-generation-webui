@@ -9,7 +9,7 @@ params = {
 }
 
 
-async def get_context(user_input: str, history: list, filters: list, top_k: int = 6, history_n: int = 1):
+async def get_context(user_input: str, history: list, filters: list, top_k: int = 6, history_n: int = 1, score_threshold=0.45):
     data = {
         "query": user_input,
         "history": history,
@@ -17,7 +17,8 @@ async def get_context(user_input: str, history: list, filters: list, top_k: int 
             "filter_key": filters
         },
         "top_k": top_k,
-        "history_n": history_n
+        "history_n": history_n,
+        "score_threshold": score_threshold
     }
     try:
         async with httpx.AsyncClient() as client:
