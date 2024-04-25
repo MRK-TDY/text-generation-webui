@@ -81,6 +81,8 @@ def build_parameters(body, chat=False):
     
 
         'intents': body.get('intents', []),
+        'player_intents': body.get('player_intents', []),
+        'character_intents': body.get('character_intents', []),
 
         'awareness': body.get('awareness', {}),
         'wants': body.get('wants', {}),
