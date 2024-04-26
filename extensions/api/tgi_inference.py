@@ -189,7 +189,6 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "model": "gpt-3.5-turbo"
             }
         ]
-
     }
     # logger.info(question)
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
