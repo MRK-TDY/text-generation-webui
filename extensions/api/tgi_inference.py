@@ -446,3 +446,77 @@ def find_stop(reply):
 
     stop_found = any(bool(pattern.findall(reply)) for pattern in patterns)
     return stop_found
+
+
+async def classify_emotion(state, user_input):
+    start_time = time.time()
+    player_name = state.get('name1', 'Player')
+    character_name = state.get('name2', 'NPC')
+
+    history = ""
+    for message_round in state['history']['internal']:
+        for i, message in enumerate(message_round):
+            if i == 0:
+                history += f"{player_name}: {message}\n"
+            else:
+                history += f"{character_name}: {message}\n"
+    history += f"{player_name}: {user_input}\n"
+
+    prompt = f"""
+<|im_start|>user
+Which emotion should {character_name} feel when responding to {player_name} in the following conversation?
+Choices: happy|angry|sad|excited|neutral
+
+Conversation:
+{history}<|im_end|>
+<|im_start|>assistant
+"""
+
+    stopping_strings = get_stopping_strings(state)
+    all_stop_strings = ["<|eot_id|>"]
+    for st in (stopping_strings, state['custom_stopping_strings']):
+        if type(st) is str:
+            st = ast.literal_eval(f"[{st}]")
+
+        if type(st) is list and len(st) > 0:
+            all_stop_strings += st
+
+    payload = {
+        "prompt": prompt,
+        "priorities": [
+            {
+                "engine": "tgi",
+                "max_new_tokens": state['max_new_tokens'],
+                "top_p": state['top_p'],
+                "top_k": state['top_k'],
+                "temperature": 0.4,
+                "repetition_penalty": state['repetition_penalty'],
+                "stop_sequences": all_stop_strings,
+                "grammar": {
+                    "type": "regex",
+                    "value": r"happy|angry|sad|excited|neutral"
+                }
+            }
+        ]
+
+    }
+
+    logger.info(payload)
+
+    client = httpx.AsyncClient()
+    async with client.stream('POST', f'{TGIParams.api_url}/generate-stream', json=payload, timeout=300) as response:
+        response.raise_for_status()
+        reply = ""
+        async for part_reply in response.aiter_bytes():
+            reply += part_reply.decode('utf-8')
+            reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
+            stop_found = stop_found or find_stop(reply)
+
+            if stop_found or shared.stop_everything:
+                await client.aclose()
+                break
+    reply = clean_reply(reply)
+    logger.info(f"Emotion: {reply}")
+    await client.aclose()
+    logger.info(f"Time taken: {time.time() - start_time}")
+    return reply

@@ -17,6 +17,7 @@ from extensions.api.util import (
     with_api_lock
 )
 from extensions.api.tgi_inference import generate_chat_reply as tgi_chat_reply
+from extensions.api.tgi_inference import classify_emotion
 from modules import shared
 from modules.chat import replace_character_names
 from modules.text_generation import generate_reply
@@ -136,6 +137,35 @@ async def mode_stop_interaction(websocket, body):
     return
 
 
+async def mode_verbatim(websocket, body):
+    user_input = body['user_input']
+    generate_params = build_parameters(body, chat=True)
+    generate_params['stream'] = True
+    _continue = body.get('_continue', False)
+
+    tts_script.params.update({
+        "tts_mode": generate_params['tts_mode']
+    })
+    if generate_params['tts_mode'] in tts_script.tts_modes and generate_params['tts_mode'] != 'off':
+        if generate_params['tts_mode'] == 'silero':
+            print("Silero TTS is enabled.")
+        elif generate_params['tts_mode'] == 'elevenlabs':
+            print("Elevenlabs TTS is enabled.")
+        tts_script.language_change(generate_params['silero_tts_language'])
+        tts_script.params.update({
+            "speaker": generate_params['silero_tts_speaker'],
+            "voice_pitch": generate_params['silero_tts_voice_pitch'],
+            "voice_speed": generate_params['silero_tts_voice_speed'],
+            "elevenlabs_speaker": generate_params['elevenlabs_speaker'],
+        })
+
+    if generate_params['mode'] == "verbatim":
+        logger.info("Verbatim mode is enabled.")
+        message = replace_character_names(user_input, generate_params['name1'], generate_params['name2'])
+        await say_verbatim(websocket, message, generate_params)
+        return
+
+
 async def mode_chat_any(websocket, body):
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
@@ -143,33 +173,32 @@ async def mode_chat_any(websocket, body):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
-    if len(generate_params['intents']) > 0 and (
-            generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
-        # Check if the user input matches any of the intents
-        triggered_intents = await asyncio.gather(
-            check_intent(user_input, generate_params['player_intents']),
-        )
-        if len(triggered_intents) > 0:
-            history = generate_params["history"]
-            internal = [user_input, ""]
-            history['internal'].append(internal)
+    # Check if the user input matches any of the intents
+    emotion, triggered_intents = await asyncio.gather(
+        classify_emotion(generate_params, user_input),
+        check_intent(user_input, generate_params['player_intents']),
+    )
+    if len(triggered_intents) > 0:
+        history = generate_params["history"]
+        internal = [user_input, ""]
+        history['internal'].append(internal)
 
-            history['visible'].append(internal)
-            # backward compatibility
-            history['triggered_intent_id'] = triggered_intents[0]
-            message_num = 0
-            await websocket.send(json.dumps({
-                'event': 'text_stream',
-                'message_num': message_num,
-                'history': history,
-                'triggered_intents': triggered_intents,
-            }))
-            message_num += 1
-            await websocket.send(json.dumps({
-                'event': 'stream_end',
-                'message_num': message_num
-            }))
-            return
+        history['visible'].append(internal)
+        # backward compatibility
+        history['triggered_intent_id'] = triggered_intents[0]
+        message_num = 0
+        await websocket.send(json.dumps({
+            'event': 'text_stream',
+            'message_num': message_num,
+            'history': history,
+            'triggered_intents': triggered_intents,
+        }))
+        message_num += 1
+        await websocket.send(json.dumps({
+            'event': 'stream_end',
+            'message_num': message_num
+        }))
+        return
 
     do_sentence_check = False
     tts_script.params.update({
@@ -188,12 +217,6 @@ async def mode_chat_any(websocket, body):
             "elevenlabs_speaker": generate_params['elevenlabs_speaker'],
         })
         do_sentence_check = True
-
-    if generate_params['mode'] == "verbatim":
-        logger.info("Verbatim mode is enabled.")
-        message = replace_character_names(user_input, generate_params['name1'], generate_params['name2'])
-        await say_verbatim(websocket, message, generate_params)
-        return
 
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
     player_id = body.get('player_id', '')
@@ -217,7 +240,7 @@ async def mode_chat_any(websocket, body):
     for attr, value in generate_params["wants"].items():
         needs_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
-    extra_context_injection = ""
+    extra_context_injection = f"Current mood: You feel {emotion}.\n"
     for attr, value in generate_params["extra_context"].items():
         extra_context_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
@@ -288,7 +311,7 @@ async def _handle_chat_stream_message(websocket, message):
         "stop_interaction": mode_stop_interaction,
         "chat": mode_chat_any,
         "chat-instruct": mode_chat_any,
-        "verbatim": mode_chat_any,
+        "verbatim": mode_verbatim,
         "instruct": mode_chat_any,
     }
 
