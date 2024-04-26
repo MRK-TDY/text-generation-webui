@@ -81,6 +81,12 @@ def build_parameters(body, chat=False):
     
 
         'intents': body.get('intents', []),
+        'player_intents': body.get('player_intents', []),
+        'character_intents': body.get('character_intents', []),
+
+        'awareness': body.get('awareness', {}),
+        'wants': body.get('wants', {}),
+        'extra_context': body.get('extra_context', {}),
     }
 
     preset_name = body.get('preset', 'None')

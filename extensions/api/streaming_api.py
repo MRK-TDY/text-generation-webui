@@ -6,7 +6,7 @@ import traceback
 from websockets.server import serve
 import http
 import urllib.parse
-import httpx
+from functools import reduce
 
 import copy
 import secrets
@@ -146,8 +146,29 @@ async def mode_chat_any(websocket, body):
     if len(generate_params['intents']) > 0 and (
             generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
-        await check_intent(websocket, user_input, generate_params)
-        if generate_params['history']['triggered_intent_id']:
+        triggered_intents = await asyncio.gather(
+            check_intent(user_input, generate_params['player_intents']),
+        )
+        if len(triggered_intents) > 0:
+            history = generate_params["history"]
+            internal = [user_input, ""]
+            history['internal'].append(internal)
+
+            history['visible'].append(internal)
+            # backward compatibility
+            history['triggered_intent_id'] = triggered_intents[0]
+            message_num = 0
+            await websocket.send(json.dumps({
+                'event': 'text_stream',
+                'message_num': message_num,
+                'history': history,
+                'triggered_intents': triggered_intents,
+            }))
+            message_num += 1
+            await websocket.send(json.dumps({
+                'event': 'stream_end',
+                'message_num': message_num
+            }))
             return
 
     do_sentence_check = False
@@ -187,25 +208,29 @@ async def mode_chat_any(websocket, body):
     knowledge_context = character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
-    generate_params["context"] = generate_params["context"].replace("<awareness_injection>", "")
-    generate_params["context"] = generate_params["context"].replace("<needs_injection>", "")
 
-    full_internal_history = copy.deepcopy(generate_params['history']['internal'])
-    full_visible_history = copy.deepcopy(generate_params['history']['visible'])
-    max_history_len = generate_params['max_history_len']
-    if len(full_internal_history) > max_history_len:
-        generate_params['history']['internal'] = full_internal_history[-max_history_len:]
-        generate_params['history']['visible'] = full_visible_history[-max_history_len:]
+    awareness_injection = ""
+    for attr, value in generate_params["awareness"].items():
+        awareness_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<awareness_injection>", awareness_injection)
+    needs_injection = "Your following needs must be satisfied:\n"
+    for attr, value in generate_params["wants"].items():
+        needs_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
+    extra_context_injection = ""
+    for attr, value in generate_params["extra_context"].items():
+        extra_context_injection += value + "\n"
+    generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
+
     # text-generation-webui reply
     # generator = generate_chat_reply(
     #     user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
     generator = tgi_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
-    generate_params['history']['internal'] = full_internal_history
-    generate_params['history']['visible'] = full_visible_history
 
     last_sentence_index = 0
     message_num = 0
+    character_sentences = []
     async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
@@ -221,6 +246,12 @@ async def mode_chat_any(websocket, body):
                 await asyncio.sleep(0)
                 continue
 
+            character_sentence = a['visible'][-1][1][last_sentence_index:].strip()
+            character_sentence = character_sentence.replace("\n", "")
+            # replace anything between <audio scr=""></audio>
+            character_sentence = re.sub(r'<audio src=".*?></audio>', '', character_sentence)
+            character_sentences.append(character_sentence)
+
             last_sentence_index = generate_params['tts_last_sentence_index']
 
         await websocket.send(json.dumps({
@@ -228,7 +259,20 @@ async def mode_chat_any(websocket, body):
             'message_num': message_num,
             'history': a
         }))
+        message_num += 1
 
+    character_intents = await asyncio.gather(
+        *[check_intent(character_sentence, generate_params['character_intents'])
+          for character_sentence in character_sentences]
+    )
+    character_intents = reduce(lambda x, y: x + y, character_intents, [])
+    if len(character_intents) > 0:
+        character_intents = list(set(character_intents))
+        await websocket.send(json.dumps({
+            'event': 'intent_triggered',
+            'message_num': message_num,
+            'triggered_intents': character_intents,
+        }))
         message_num += 1
 
     await websocket.send(json.dumps({
@@ -384,122 +428,17 @@ async def say_verbatim(websocket, user_input, state):
     }))
 
 
-async def check_intent(websocket, user_input, state):
-    history = state['history']
-    history['triggered_intent_id'] = ""
-
+async def check_intent(phrase, intents):
     # user_input is empty
-    if not user_input:
-        return
+    if not phrase or not intents:
+        return []
 
+    tasks = []
+    for intent in intents:
+        task = intent_script.intent_similarity(phrase, intent['training_phrases'])
+        tasks.append(task)
+    results = await asyncio.gather(*tasks)
+    intents_scores = {intent['id']: result for intent, result in zip(intents, results)}
 
-    print("Checking for Intents...")
-
-    intents = {}
-    for intent in state['intents']:
-        intents[intent['id']] = await intent_script.intent_similarity(user_input, intent['training_phrases'])
-    max_intent = None
-    for intent_id, intent_score in intents.items():
-        if max_intent is None or intent_score > intents[max_intent]:
-            max_intent = intent_id
-
-    # tts_script.params.update({
-    #     "tts_mode": "off"
-    # })
-    #
-    # intents_str = ""
-    # for intent in state['intents']:
-    #     intents_str += "ID: {id}\n".format(id=intent['id'])
-    #     intents_str += "Sentences:\n"
-    #     for sentence in intent['training_phrases']:
-    #         intents_str += "- \"{sentence}\"\n".format(sentence=sentence)
-    # intent_input = ("Given the following intents composed of IDs and sentences:\n"
-    #                 "\n"
-    #                 "{intents}\n"
-    #                 "\n"
-    #                 "To which intent is the sentence \"{input}\" more related?\n"
-    #                 "\n"
-    #                 "Answer only with the ID or \"none\". No explanation. No other words. Super short response."
-    #                 ).format(intents=intents_str, input=user_input)
-    #
-    # # Add instruction tags
-    # intent_input = f"[INST]{intent_input}[/INST]"
-    #
-    # # create gen params for intent questioning.
-    # generate_params = build_parameters({})
-    # generate_params.update({
-    #     "mode": "instruct",
-    #     "tts_mode": "off",
-    #     "stream": False,
-    #     "max_new_tokens": 100,
-    #     "temperature": 0.1,
-    #     "top_p": 0,
-    #     "min_p": 0,
-    #     "top_k": 0,
-    #     "repetition_penalty": 1.5,
-    #     "presence_penalty": 2,
-    #     "do_sample": False,
-    #     # "num_beams": 3,
-    #     # "length_penalty": -5,
-    #     # "early_stopping": True,
-    #     "guidance_scale": 1.5,
-    #     "negative_prompt": "Long answer. Explain. Based on the given intents. Here's my answer. Sure!",
-    # })
-    # stopping_strings = generate_params.pop('stopping_strings')
-    # generator = generate_reply(
-    #     intent_input, generate_params, stopping_strings=stopping_strings, is_chat=False)
-    #
-    # message_num = 0
-    # answer = ''
-    # for a in generator:
-    #     answer = a
-    #
-    # tts_script.params.update({
-    #     "tts_mode": state['tts_mode']
-    # })
-    #
-    # # latest_answer = answer['internal'][-1][-1]
-    # latest_answer = answer
-    #
-    # def format_intent_id(input: str) -> str:
-    #     result = input.lower()
-    #     result = result.replace("_", "")
-    #     result = result.strip()
-    #     return result
-    #
-    # # check if the answer matches any of the intents
-    # for intent in state['intents']:
-    #     if format_intent_id(intent['id']) in format_intent_id(latest_answer):
-    #         history['triggered_intent_id'] = intent['id']
-    #         break
-    #
-    # if not history['triggered_intent_id']:
-    #     print(f"No intent triggered. Generation: {latest_answer}")
-    #     return
-    #
-    # print(f"Intent match found. Triggering {history['triggered_intent_id']}. Generation: {latest_answer}")
-
-    if intents[max_intent] < 0.8:
-        print("No intent triggered.")
-        return
-
-    history['triggered_intent_id'] = max_intent
-    # fix history
-    internal = [ user_input, "" ]
-    history['internal'].append(internal)
-    history['visible'].append(internal)
-
-    message_num = 0
-    await websocket.send(json.dumps({
-        'event': 'text_stream',
-        'message_num': message_num,
-        'history': history
-    }))
-
-    await asyncio.sleep(0)
-    message_num += 1
-
-    await websocket.send(json.dumps({
-        'event': 'stream_end',
-        'message_num': message_num
-    }))
+    triggerred_intents = [intent_id for intent_id, intent_score in intents_scores.items() if intent_score > 0.8]
+    return triggerred_intents

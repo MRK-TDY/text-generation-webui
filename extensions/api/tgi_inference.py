@@ -180,13 +180,14 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "max_new_tokens": state['max_new_tokens'],
                 "top_p": state['top_p'],
                 "top_k": state['top_k'],
+                "temperature": 0.4,
                 "repetition_penalty": state['repetition_penalty'],
                 "stop_sequences": all_stop_strings,
             }
         ]
 
     }
-    logger.info(all_stop_strings)
+    # logger.info(question)
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
     client = httpx.AsyncClient()
@@ -199,6 +200,7 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         # for reply in generate_func(question, original_question, seed, state, stopping_strings, is_chat=is_chat):
         async for part_reply in response.aiter_bytes():
             reply += part_reply.decode('utf-8')
+            # logger.info(reply)
             reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
             stop_found = stop_found or find_stop(reply)
             # check if regex match
@@ -264,7 +266,11 @@ def generate_chat_prompt(user_input, state, **kwargs):
     impersonate = kwargs.get('impersonate', False)
     _continue = kwargs.get('_continue', False)
     also_return_rows = kwargs.get('also_return_rows', False)
+
+    max_history_len = state.get('max_history_len', 8)
     history = kwargs.get('history', state['history'])['internal']
+    if len(history) > max_history_len:
+        history = history[-max_history_len:]
 
     # Templates
     chat_template_str = state['chat_template_str']
@@ -421,6 +427,7 @@ def clean_reply(reply):
         re.compile(r'(<)?\|eot(.*)', re.DOTALL),
         re.compile(r'</s>', re.DOTALL),
         re.compile(r'\|.*', re.DOTALL),
+        re.compile(r'[\U0001F600-\U0001F64F]|[\U0001F300-\U0001F5FF]|[\U0001F680-\U0001F6FF]|[\U0001F1E0-\U0001F1FF]', re.DOTALL),
     ]
 
     for pattern in patterns:
