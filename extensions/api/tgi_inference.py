@@ -452,7 +452,6 @@ def find_stop(reply):
 
 
 async def classify_emotion(state, user_input):
-    start_time = time.time()
     player_name = state.get('name1', 'Player')
     character_name = state.get('name2', 'NPC')
 
@@ -504,8 +503,6 @@ Conversation:
 
     }
 
-    logger.info(payload)
-
     client = httpx.AsyncClient()
     async with client.stream('POST', f'{TGIParams.api_url}/generate-stream', json=payload, timeout=300) as response:
         response.raise_for_status()
@@ -519,7 +516,5 @@ Conversation:
                 await client.aclose()
                 break
     reply = clean_reply(reply)
-    logger.info(f"Emotion: {reply}")
     await client.aclose()
-    logger.info(f"Time taken: {time.time() - start_time}")
     return reply
