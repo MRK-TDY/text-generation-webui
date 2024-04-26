@@ -147,14 +147,13 @@ async def mode_chat_any(websocket, body):
             generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
         # Check if the user input matches any of the intents
         triggered_intents = await asyncio.gather(
-            check_intent(user_input, generate_params['intents']),
             check_intent(user_input, generate_params['player_intents']),
         )
-        triggered_intents = reduce(lambda x, y: x + y, triggered_intents, [])
         if len(triggered_intents) > 0:
             history = generate_params["history"]
             internal = [user_input, ""]
             history['internal'].append(internal)
+
             history['visible'].append(internal)
             # backward compatibility
             history['triggered_intent_id'] = triggered_intents[0]
@@ -223,19 +222,11 @@ async def mode_chat_any(websocket, body):
         extra_context_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
 
-    full_internal_history = copy.deepcopy(generate_params['history']['internal'])
-    full_visible_history = copy.deepcopy(generate_params['history']['visible'])
-    max_history_len = generate_params['max_history_len']
-    if len(full_internal_history) > max_history_len:
-        generate_params['history']['internal'] = full_internal_history[-max_history_len:]
-        generate_params['history']['visible'] = full_visible_history[-max_history_len:]
     # text-generation-webui reply
     # generator = generate_chat_reply(
     #     user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
     generator = tgi_chat_reply(
         user_input, generate_params, regenerate=regenerate, _continue=_continue, loading_message=False)
-    generate_params['history']['internal'] = full_internal_history
-    generate_params['history']['visible'] = full_visible_history
 
     last_sentence_index = 0
     message_num = 0

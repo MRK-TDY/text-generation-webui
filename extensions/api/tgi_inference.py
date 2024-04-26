@@ -266,7 +266,11 @@ def generate_chat_prompt(user_input, state, **kwargs):
     impersonate = kwargs.get('impersonate', False)
     _continue = kwargs.get('_continue', False)
     also_return_rows = kwargs.get('also_return_rows', False)
+
+    max_history_len = state.get('max_history_len', 8)
     history = kwargs.get('history', state['history'])['internal']
+    if len(history) > max_history_len:
+        history = history[-max_history_len:]
 
     # Templates
     chat_template_str = state['chat_template_str']
