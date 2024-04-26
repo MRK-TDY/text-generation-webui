@@ -183,6 +183,10 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "temperature": 0.4,
                 "repetition_penalty": state['repetition_penalty'],
                 "stop_sequences": all_stop_strings,
+            },
+            {
+                "engine": "openai",
+                "model": "gpt-3.5-turbo"
             }
         ]
 
