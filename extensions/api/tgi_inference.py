@@ -35,6 +35,7 @@ async def generate_chat_reply(text, state, regenerate=False, _continue=False, lo
 
 
 async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
+    state['user_input'] = text
     history = state['history']
     output = copy.deepcopy(history)
     output = apply_extensions('history', output)
@@ -172,9 +173,25 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         min_update_interval = 1 / state['max_updates_second']
 
     all_stop_strings.append("<|eot_id|>")
+    messages = [
+        {
+            "role": "system",
+            "content": state.get("context", "")
+        }
+    ]
+    history = state.get("history").get("internal", [])
+    for user_msg, assistant_msg in history:
+        messages.append({"role": "user", "content": user_msg})
+        messages.append({"role": "assistant", "content": assistant_msg})
+    messages.append({"role": "user", "content": state.get("user_input", "")})
+
     payload = {
-        "prompt": question,
+        "messages": messages,
         "priorities": [
+            {
+                "engine": "groq",
+                "llm": "llama3-70b-8192"
+            },
             {
                 "engine": "tgi",
                 "max_new_tokens": state['max_new_tokens'],
@@ -183,14 +200,15 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "temperature": 0.4,
                 "repetition_penalty": state['repetition_penalty'],
                 "stop_sequences": all_stop_strings,
+                "llm": "meta-llama/Meta-Llama-3-8B-Instruct"
             },
             {
                 "engine": "openai",
-                "model": "gpt-3.5-turbo"
+                "llm": "gpt-3.5-turbo"
             }
         ]
     }
-    # logger.info(question)
+
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
     client = httpx.AsyncClient()
@@ -500,12 +518,12 @@ Conversation:
                 }
             }
         ]
-
     }
 
     client = httpx.AsyncClient()
-    async with client.stream('POST', f'{TGIParams.api_url}/generate-stream', json=payload, timeout=300) as response:
-        response.raise_for_status()
+    async with client.stream('POST', f'{TGIParams.api_url}/guidance-generate-stream', json=payload, timeout=300) as response:
+        # response.raise_for_status()
+        # logger.error(response.content)
         reply = ""
         async for part_reply in response.aiter_bytes():
             reply += part_reply.decode('utf-8')

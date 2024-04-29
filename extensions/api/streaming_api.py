@@ -224,11 +224,12 @@ async def mode_chat_any(websocket, body):
     history = generate_params['history']['internal']
     history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
 
-    character_knowledge_context, player_knowledge_context = await asyncio.gather(
-        km_script.get_context(user_input=user_input, history=history, filters=["world", npc,], top_k=5),
-        km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=3)
+    world_knowledge_context, character_knowledge_context, player_knowledge_context = await asyncio.gather(
+        km_script.get_context(user_input=user_input, history=history, filters=["world"], top_k=3),
+        km_script.get_context(user_input=user_input, history=history, filters=[npc], top_k=3),
+        km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=2)
     )
-    knowledge_context = character_knowledge_context + player_knowledge_context
+    knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
 
@@ -236,7 +237,7 @@ async def mode_chat_any(websocket, body):
     for attr, value in generate_params["awareness"].items():
         awareness_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<awareness_injection>", awareness_injection)
-    needs_injection = "Your following needs must be satisfied:\n"
+    needs_injection = ""
     for attr, value in generate_params["wants"].items():
         needs_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
