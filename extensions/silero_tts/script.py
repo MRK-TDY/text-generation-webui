@@ -207,7 +207,7 @@ async def save_audio_to_file(state, string_to_voice, original_string):
         )
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(params["api_endpoint"], json=payload)
+        response = await client.post(params["api_endpoint"], json=payload, timeout=60)
         response.raise_for_status()
         data = response.json()
         audio_file = data["file"]
