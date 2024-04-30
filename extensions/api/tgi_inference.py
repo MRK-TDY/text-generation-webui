@@ -188,9 +188,13 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
     payload = {
         "messages": messages,
         "priorities": [
+            # {
+            #     "engine": "groq",
+            #     "llm": "llama3-70b-8192"
+            # },
             {
-                "engine": "groq",
-                "llm": "llama3-70b-8192"
+                "engine": "aws_cohere",
+                "llm": "cohere.command-r-plus-v1:0"
             },
             {
                 "engine": "tgi",
