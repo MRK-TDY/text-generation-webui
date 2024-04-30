@@ -193,10 +193,6 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
             #     "llm": "llama3-70b-8192"
             # },
             {
-                "engine": "aws_cohere",
-                "llm": "cohere.command-r-plus-v1:0"
-            },
-            {
                 "engine": "tgi",
                 "max_new_tokens": state['max_new_tokens'],
                 "top_p": state['top_p'],
@@ -205,6 +201,10 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "repetition_penalty": state['repetition_penalty'],
                 "stop_sequences": all_stop_strings,
                 "llm": "meta-llama/Meta-Llama-3-8B-Instruct"
+            },
+            {
+                "engine": "aws_cohere",
+                "llm": "cohere.command-r-plus-v1:0"
             },
             {
                 "engine": "openai",
