@@ -3,6 +3,8 @@ import json
 import ssl
 from threading import Thread
 import traceback
+
+import httpx
 from websockets.server import serve
 import http
 import urllib.parse
@@ -30,6 +32,10 @@ from extensions.knowledge_management import script as km_script
 import re
 
 PATH = '/api/v1/stream'
+
+
+class DreamiaAPI:
+    base_url = None
 
 
 @with_api_lock
@@ -255,6 +261,7 @@ async def mode_chat_any(websocket, body):
     last_sentence_index = 0
     message_num = 0
     character_sentences = []
+    new_history = []
     async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
@@ -278,6 +285,7 @@ async def mode_chat_any(websocket, body):
 
             last_sentence_index = generate_params['tts_last_sentence_index']
 
+        new_history = a
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
@@ -286,7 +294,7 @@ async def mode_chat_any(websocket, body):
         message_num += 1
 
     character_intents = await asyncio.gather(
-        *[check_intent(character_sentence, generate_params['character_intents'])
+        *[check_intent(character_sentence, generate_params['character_intents'], 0.7)
           for character_sentence in character_sentences]
     )
     character_intents = reduce(lambda x, y: x + y, character_intents, [])
@@ -296,8 +304,13 @@ async def mode_chat_any(websocket, body):
             'event': 'intent_triggered',
             'message_num': message_num,
             'triggered_intents': character_intents,
+            'history': new_history
         }))
         message_num += 1
+
+    response = await log_response(player_id, generate_params["context"], new_history["internal"],
+                                  generate_params["name2"], generate_params["name1"])
+    logger.info(response)
 
     await websocket.send(json.dumps({
         'event': 'stream_end',
@@ -452,7 +465,7 @@ async def say_verbatim(websocket, user_input, state):
     }))
 
 
-async def check_intent(phrase, intents):
+async def check_intent(phrase, intents, threshold = 0.8):
     # user_input is empty
     if not phrase or not intents:
         return []
@@ -464,5 +477,25 @@ async def check_intent(phrase, intents):
     results = await asyncio.gather(*tasks)
     intents_scores = {intent['id']: result for intent, result in zip(intents, results)}
 
-    triggerred_intents = [intent_id for intent_id, intent_score in intents_scores.items() if intent_score > 0.8]
+    for intent_id, intent_score in intents_scores.items():
+        logger.info(f'Score for {intent_id}: {intent_score}')
+
+    triggerred_intents = [intent_id for intent_id, intent_score in intents_scores.items() if intent_score > threshold]
     return triggerred_intents
+
+
+async def log_response(player_id, context, history, npc_name, player_name):
+    messages = []
+    for player_message, npc_message in history:
+        messages.append(f"{player_name}: {player_message}")
+        messages.append(f"{npc_name}: {npc_message}")
+
+    endpoint = DreamiaAPI.base_url + "/log"
+    client = httpx.AsyncClient()
+    response = await client.post(endpoint, json={
+        "player_id": player_id,
+        "context": context,
+        "messages": messages
+    })
+    await client.aclose()
+    return response
