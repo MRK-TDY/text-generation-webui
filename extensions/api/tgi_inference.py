@@ -181,9 +181,9 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
     ]
     history = state.get("history").get("internal", [])
     for player_message, npc_message in history:
-        messages.append({"role": "user", "content": player_message})
-        messages.append({"role": "assistant", "content": npc_message})
-    messages.append({"role": "user", "content": state.get("user_input", "")})
+        messages.append({"role": "player", "content": player_message})
+        messages.append({"role": "npc", "content": npc_message})
+    messages.append({"role": "player", "content": state.get("user_input", "")})
 
     payload = {
         "messages": messages,
