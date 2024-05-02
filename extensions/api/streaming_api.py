@@ -10,7 +10,6 @@ import http
 import urllib.parse
 from functools import reduce
 
-import copy
 import secrets
 
 from extensions.api.util import (
@@ -19,7 +18,7 @@ from extensions.api.util import (
     with_api_lock
 )
 from extensions.api.tgi_inference import generate_chat_reply as tgi_chat_reply
-from extensions.api.tgi_inference import classify_emotion
+from extensions.api.tgi_inference import classify_emotion_pre, classify_emotion_post
 from modules import shared
 from modules.chat import replace_character_names
 from modules.text_generation import generate_reply
@@ -192,7 +191,7 @@ async def mode_chat_any(websocket, body):
      character_knowledge_context,
      player_knowledge_context) = (
         await asyncio.gather(
-            classify_emotion(generate_params, user_input),
+            classify_emotion_pre(generate_params, user_input),
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
             km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
@@ -200,6 +199,8 @@ async def mode_chat_any(websocket, body):
             km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
         )
     )
+    emotion = generate_params.get("emotion", emotion)
+    emotion = validate_emotion(emotion)
     generate_params["relevant_history"] = relevant_history
     knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
 
@@ -287,6 +288,7 @@ async def mode_chat_any(websocket, body):
             character_sentence = character_sentence.replace("\n", "")
             # replace anything between <audio scr=""></audio>
             character_sentence = re.sub(r'<audio src=".*?></audio>', '', character_sentence)
+            emotion = await classify_emotion_post(generate_params, character_sentence)
             character_sentences.append(character_sentence)
 
             last_sentence_index = generate_params['tts_last_sentence_index']
@@ -295,6 +297,7 @@ async def mode_chat_any(websocket, body):
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
+            'emotion': emotion,
             'history': a
         }))
         message_num += 1
@@ -532,3 +535,8 @@ async def get_relevant_history(query: str, history: list[list[str]], threshold=0
             relevant_history.append(relevant_pair)
 
     return relevant_history
+
+
+def validate_emotion(emotion):
+    accepted_emotions = ["happy", "excited", "surprised", "sad", "bored", "disappointed", "confused"]
+    return emotion if emotion in accepted_emotions else "neutral"
