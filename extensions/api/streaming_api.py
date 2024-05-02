@@ -179,11 +179,30 @@ async def mode_chat_any(websocket, body):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
+    old_history = generate_params['history']['internal'][:-generate_params['max_history_len']]
+    player_id = body.get('player_id', '')
+    npc = generate_params.get("name2")
+    flat_history = generate_params['history']['internal']
+    flat_history = [message for dialogue_round in flat_history for message in dialogue_round] if len(flat_history) > 0 else []
     # Check if the user input matches any of the intents
-    emotion, triggered_intents = await asyncio.gather(
-        classify_emotion(generate_params, user_input),
-        check_intent(user_input, generate_params['player_intents']),
+    (emotion,
+     triggered_intents,
+     relevant_history,
+     world_knowledge_context,
+     character_knowledge_context,
+     player_knowledge_context) = (
+        await asyncio.gather(
+            classify_emotion(generate_params, user_input),
+            check_intent(user_input, generate_params['player_intents']),
+            get_relevant_history(user_input, old_history),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
+        )
     )
+    generate_params["relevant_history"] = relevant_history
+    knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
+
     if len(triggered_intents) > 0:
         history = generate_params["history"]
         internal = [user_input, ""]
@@ -225,20 +244,7 @@ async def mode_chat_any(websocket, body):
         do_sentence_check = True
 
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
-    player_id = body.get('player_id', '')
-    npc = generate_params.get("name2")
-    history = generate_params['history']['internal']
-    history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
-
-    world_knowledge_context, character_knowledge_context, player_knowledge_context = await asyncio.gather(
-        km_script.get_context(user_input=user_input, history=history, filters=["world"], top_k=5),
-        km_script.get_context(user_input=user_input, history=history, filters=[npc], top_k=5),
-        km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=3)
-    )
-    knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
-
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
-
     awareness_injection = ""
     for attr, value in generate_params["awareness"].items():
         awareness_injection += value + "\n"
@@ -308,8 +314,7 @@ async def mode_chat_any(websocket, body):
         }))
         message_num += 1
 
-    response = await log_response(player_id, generate_params["context"], new_history["internal"],
-                                  generate_params["name2"], generate_params["name1"])
+    response = await log_response(player_id, generate_params, new_history["internal"])
     logger.info(response)
 
     await websocket.send(json.dumps({
@@ -484,9 +489,19 @@ async def check_intent(phrase, intents, threshold = 0.8):
     return triggerred_intents
 
 
-async def log_response(player_id, context, history, npc_name, player_name):
+async def log_response(player_id, state, new_history):
+    player_name = state["name1"]
+    npc_name = state["name2"]
     messages = []
-    for player_message, npc_message in history:
+    relevant_history = state["relevant_history"]
+    truncated_history = new_history[-state["max_history_len"]:]
+    for player_message, npc_message in relevant_history:
+        if player_message != "":
+            messages.append(f"{player_name}: {player_message}")
+        if npc_message != "":
+            messages.append(f"{npc_name}: {npc_message}")
+    messages.append("...")
+    for player_message, npc_message in truncated_history:
         messages.append(f"{player_name}: {player_message}")
         messages.append(f"{npc_name}: {npc_message}")
 
@@ -494,8 +509,26 @@ async def log_response(player_id, context, history, npc_name, player_name):
     client = httpx.AsyncClient()
     response = await client.post(endpoint, json={
         "player_id": player_id,
-        "context": context,
+        "context": state["context"],
         "messages": messages
     })
     await client.aclose()
     return response
+
+
+async def get_relevant_history(query: str, history: list[list[str]], threshold=0.55):
+    messages = [msg for pair in history for msg in pair]
+    similarities = await intent_script.calculate_similarity(query, messages)
+
+    # Filter out irrelevant messages and construct the relevant history directly
+    relevant_history = []
+    for (i, (player_msg, npc_msg)) in enumerate(history):
+        relevant_pair = ["", ""]
+        if similarities[2 * i] > threshold:  # Check similarity for player_message
+            relevant_pair[0] = player_msg
+        if similarities[2 * i + 1] > threshold:  # Check similarity for npc_message
+            relevant_pair[1] = npc_msg
+        if relevant_pair != ["", ""]:  # Only add if there's at least one relevant message
+            relevant_history.append(relevant_pair)
+
+    return relevant_history
