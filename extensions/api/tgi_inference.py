@@ -459,6 +459,7 @@ def clean_reply(reply):
         re.compile(r'\[.*?(]|$)', re.DOTALL),
         re.compile(r'(<)?\|im(.*)', re.DOTALL),
         re.compile(r'(<)?\|eot(.*)', re.DOTALL),
+        re.compile(r'(<)?\|end(.*)', re.DOTALL),
         re.compile(r'</s>', re.DOTALL),
         re.compile(r'\|.*', re.DOTALL),
         re.compile(r'[\U0001F600-\U0001F64F]|[\U0001F300-\U0001F5FF]|[\U0001F680-\U0001F6FF]|[\U0001F1E0-\U0001F1FF]', re.DOTALL),
@@ -475,6 +476,7 @@ def find_stop(reply):
         re.compile(r'([.?!] ?|\n)\w+:(.*)', re.DOTALL),
         re.compile(r'(<)?\|im(.*)', re.DOTALL),
         re.compile(r'(<)?\|eot(.*)', re.DOTALL),
+        re.compile(r'(<)?\|end(.*)', re.DOTALL),
         re.compile(r'</s>', re.DOTALL)
     ]
 
@@ -482,7 +484,7 @@ def find_stop(reply):
     return stop_found
 
 
-async def classify_emotion(state, user_input):
+async def classify_emotion_pre(state, user_input):
     player_name = state.get('name1', 'Player')
     character_name = state.get('name2', 'NPC')
 
@@ -498,15 +500,43 @@ async def classify_emotion(state, user_input):
     prompt = f"""
 <|im_start|>user
 Which emotion should {character_name} feel when responding to {player_name} in the following conversation?
-Choices: happy|angry|sad|excited|neutral
+Choices: happy, excited, surprised, sad, bored, disappointed, confused
 
 Conversation:
 {history}<|im_end|>
 <|im_start|>assistant
 """
+    grammar = {
+        "type": "regex",
+        "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
+    }
 
+    response = await guidance(state, prompt, grammar)
+    return response
+
+
+async def classify_emotion_post(state, sentence):
+    prompt = f"""
+<|im_start|>user
+What is the emotion of the following sentence in the context of a dialogue.
+Choices: happy, excited, surprised, sad, bored, disappointed, confused
+
+Sentence:
+{sentence}<|im_end|>
+<|im_start|>assistant
+"""
+    grammar = {
+        "type": "regex",
+        "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
+    }
+
+    response = await guidance(state, prompt, grammar)
+    return response
+
+
+async def guidance(state, prompt, grammar):
     stopping_strings = get_stopping_strings(state)
-    all_stop_strings = ["<|eot_id|>"]
+    all_stop_strings = ["<|eot_id|>", "<|end_of_text|>"]
     for st in (stopping_strings, state['custom_stopping_strings']):
         if type(st) is str:
             st = ast.literal_eval(f"[{st}]")
@@ -524,15 +554,11 @@ Conversation:
                 "top_k": state['top_k'],
                 "temperature": 0.4,
                 "repetition_penalty": state['repetition_penalty'],
-                "stop_sequences": all_stop_strings,
-                "grammar": {
-                    "type": "regex",
-                    "value": r"happy|angry|sad|excited|neutral"
-                }
+                "stop_sequences": stopping_strings,
+                "grammar": grammar
             }
         ]
     }
-
     client = httpx.AsyncClient()
     async with client.stream('POST', f'{TGIParams.api_url}/guidance-generate-stream', json=payload, timeout=300) as response:
         # response.raise_for_status()
@@ -544,7 +570,6 @@ Conversation:
             stop_found = stop_found or find_stop(reply)
 
             if stop_found or shared.stop_everything:
-                await client.aclose()
                 break
     reply = clean_reply(reply)
     await client.aclose()
