@@ -35,6 +35,7 @@ async def generate_chat_reply(text, state, regenerate=False, _continue=False, lo
 
 
 async def chatbot_wrapper(text, state, regenerate=False, _continue=False, loading_message=True, for_ui=False):
+    state['user_input'] = text
     history = state['history']
     output = copy.deepcopy(history)
     output = apply_extensions('history', output)
@@ -172,9 +173,34 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
         min_update_interval = 1 / state['max_updates_second']
 
     all_stop_strings.append("<|eot_id|>")
+    messages = [
+        {
+            "role": "system",
+            "content": state.get("context", "")
+        }
+    ]
+    relevant_history = state.get("relevant_history", [])
+    for player_message, npc_message in relevant_history:
+        if player_message != "":
+            messages.append({"role": "player", "content": player_message})
+        if npc_message != "":
+            messages.append({"role": "npc", "content": npc_message})
+
+    history = state.get("history").get("internal", [])
+    for player_message, npc_message in history:
+        messages.append({"role": "player", "content": player_message})
+        messages.append({"role": "npc", "content": npc_message})
+    messages.append({"role": "player", "content": state.get("user_input", "")})
+
+    # logger.info(messages)
+
     payload = {
-        "prompt": question,
+        "messages": messages,
         "priorities": [
+            # {
+            #     "engine": "groq",
+            #     "llm": "llama3-70b-8192"
+            # },
             {
                 "engine": "tgi",
                 "max_new_tokens": state['max_new_tokens'],
@@ -183,11 +209,19 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
                 "temperature": 0.4,
                 "repetition_penalty": state['repetition_penalty'],
                 "stop_sequences": all_stop_strings,
+                "llm": "meta-llama/Meta-Llama-3-8B-Instruct"
+            },
+            {
+                "engine": "aws_cohere",
+                "llm": "cohere.command-r-plus-v1:0"
+            },
+            {
+                "engine": "openai",
+                "llm": "gpt-3.5-turbo"
             }
         ]
-
     }
-    # logger.info(question)
+
     # with requests.post(f'{TGIParams.api_url}/generate-stream', json=payload, stream=True) as response:
         # Ensure the request was successful
     client = httpx.AsyncClient()
@@ -446,3 +480,72 @@ def find_stop(reply):
 
     stop_found = any(bool(pattern.findall(reply)) for pattern in patterns)
     return stop_found
+
+
+async def classify_emotion(state, user_input):
+    player_name = state.get('name1', 'Player')
+    character_name = state.get('name2', 'NPC')
+
+    history = ""
+    for message_round in state['history']['internal']:
+        for i, message in enumerate(message_round):
+            if i == 0:
+                history += f"{player_name}: {message}\n"
+            else:
+                history += f"{character_name}: {message}\n"
+    history += f"{player_name}: {user_input}\n"
+
+    prompt = f"""
+<|im_start|>user
+Which emotion should {character_name} feel when responding to {player_name} in the following conversation?
+Choices: happy|angry|sad|excited|neutral
+
+Conversation:
+{history}<|im_end|>
+<|im_start|>assistant
+"""
+
+    stopping_strings = get_stopping_strings(state)
+    all_stop_strings = ["<|eot_id|>"]
+    for st in (stopping_strings, state['custom_stopping_strings']):
+        if type(st) is str:
+            st = ast.literal_eval(f"[{st}]")
+
+        if type(st) is list and len(st) > 0:
+            all_stop_strings += st
+
+    payload = {
+        "prompt": prompt,
+        "priorities": [
+            {
+                "engine": "tgi",
+                "max_new_tokens": state['max_new_tokens'],
+                "top_p": state['top_p'],
+                "top_k": state['top_k'],
+                "temperature": 0.4,
+                "repetition_penalty": state['repetition_penalty'],
+                "stop_sequences": all_stop_strings,
+                "grammar": {
+                    "type": "regex",
+                    "value": r"happy|angry|sad|excited|neutral"
+                }
+            }
+        ]
+    }
+
+    client = httpx.AsyncClient()
+    async with client.stream('POST', f'{TGIParams.api_url}/guidance-generate-stream', json=payload, timeout=300) as response:
+        # response.raise_for_status()
+        # logger.error(response.content)
+        reply = ""
+        async for part_reply in response.aiter_bytes():
+            reply += part_reply.decode('utf-8')
+            reply, stop_found = apply_stopping_strings(reply, all_stop_strings)
+            stop_found = stop_found or find_stop(reply)
+
+            if stop_found or shared.stop_everything:
+                await client.aclose()
+                break
+    reply = clean_reply(reply)
+    await client.aclose()
+    return reply

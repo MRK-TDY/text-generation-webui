@@ -3,6 +3,8 @@ import json
 import ssl
 from threading import Thread
 import traceback
+
+import httpx
 from websockets.server import serve
 import http
 import urllib.parse
@@ -17,6 +19,7 @@ from extensions.api.util import (
     with_api_lock
 )
 from extensions.api.tgi_inference import generate_chat_reply as tgi_chat_reply
+from extensions.api.tgi_inference import classify_emotion
 from modules import shared
 from modules.chat import replace_character_names
 from modules.text_generation import generate_reply
@@ -29,6 +32,10 @@ from extensions.knowledge_management import script as km_script
 import re
 
 PATH = '/api/v1/stream'
+
+
+class DreamiaAPI:
+    base_url = None
 
 
 @with_api_lock
@@ -136,6 +143,35 @@ async def mode_stop_interaction(websocket, body):
     return
 
 
+async def mode_verbatim(websocket, body):
+    user_input = body['user_input']
+    generate_params = build_parameters(body, chat=True)
+    generate_params['stream'] = True
+    _continue = body.get('_continue', False)
+
+    tts_script.params.update({
+        "tts_mode": generate_params['tts_mode']
+    })
+    if generate_params['tts_mode'] in tts_script.tts_modes and generate_params['tts_mode'] != 'off':
+        if generate_params['tts_mode'] == 'silero':
+            print("Silero TTS is enabled.")
+        elif generate_params['tts_mode'] == 'elevenlabs':
+            print("Elevenlabs TTS is enabled.")
+        tts_script.language_change(generate_params['silero_tts_language'])
+        tts_script.params.update({
+            "speaker": generate_params['silero_tts_speaker'],
+            "voice_pitch": generate_params['silero_tts_voice_pitch'],
+            "voice_speed": generate_params['silero_tts_voice_speed'],
+            "elevenlabs_speaker": generate_params['elevenlabs_speaker'],
+        })
+
+    if generate_params['mode'] == "verbatim":
+        logger.info("Verbatim mode is enabled.")
+        message = replace_character_names(user_input, generate_params['name1'], generate_params['name2'])
+        await say_verbatim(websocket, message, generate_params)
+        return
+
+
 async def mode_chat_any(websocket, body):
     user_input = body['user_input']
     generate_params = build_parameters(body, chat=True)
@@ -143,33 +179,51 @@ async def mode_chat_any(websocket, body):
     regenerate = body.get('regenerate', False)
     _continue = body.get('_continue', False)
 
-    if len(generate_params['intents']) > 0 and (
-            generate_params['mode'] == "chat" or generate_params['mode'] == "chat-instruct"):
-        # Check if the user input matches any of the intents
-        triggered_intents = await asyncio.gather(
+    old_history = generate_params['history']['internal'][:-generate_params['max_history_len']]
+    player_id = body.get('player_id', '')
+    npc = generate_params.get("name2")
+    flat_history = generate_params['history']['internal']
+    flat_history = [message for dialogue_round in flat_history for message in dialogue_round] if len(flat_history) > 0 else []
+    # Check if the user input matches any of the intents
+    (emotion,
+     triggered_intents,
+     relevant_history,
+     world_knowledge_context,
+     character_knowledge_context,
+     player_knowledge_context) = (
+        await asyncio.gather(
+            classify_emotion(generate_params, user_input),
             check_intent(user_input, generate_params['player_intents']),
+            get_relevant_history(user_input, old_history),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
         )
-        if len(triggered_intents) > 0:
-            history = generate_params["history"]
-            internal = [user_input, ""]
-            history['internal'].append(internal)
+    )
+    generate_params["relevant_history"] = relevant_history
+    knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
 
-            history['visible'].append(internal)
-            # backward compatibility
-            history['triggered_intent_id'] = triggered_intents[0]
-            message_num = 0
-            await websocket.send(json.dumps({
-                'event': 'text_stream',
-                'message_num': message_num,
-                'history': history,
-                'triggered_intents': triggered_intents,
-            }))
-            message_num += 1
-            await websocket.send(json.dumps({
-                'event': 'stream_end',
-                'message_num': message_num
-            }))
-            return
+    if len(triggered_intents) > 0:
+        history = generate_params["history"]
+        internal = [user_input, ""]
+        history['internal'].append(internal)
+
+        history['visible'].append(internal)
+        # backward compatibility
+        history['triggered_intent_id'] = triggered_intents[0]
+        message_num = 0
+        await websocket.send(json.dumps({
+            'event': 'text_stream',
+            'message_num': message_num,
+            'history': history,
+            'triggered_intents': triggered_intents,
+        }))
+        message_num += 1
+        await websocket.send(json.dumps({
+            'event': 'stream_end',
+            'message_num': message_num
+        }))
+        return
 
     do_sentence_check = False
     tts_script.params.update({
@@ -189,35 +243,17 @@ async def mode_chat_any(websocket, body):
         })
         do_sentence_check = True
 
-    if generate_params['mode'] == "verbatim":
-        logger.info("Verbatim mode is enabled.")
-        message = replace_character_names(user_input, generate_params['name1'], generate_params['name2'])
-        await say_verbatim(websocket, message, generate_params)
-        return
-
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
-    player_id = body.get('player_id', '')
-    npc = generate_params.get("name2")
-    history = generate_params['history']['internal']
-    history = [message for dialogue_round in history for message in dialogue_round] if len(history) > 0 else []
-
-    character_knowledge_context, player_knowledge_context = await asyncio.gather(
-        km_script.get_context(user_input=user_input, history=history, filters=["world", npc,], top_k=5),
-        km_script.get_context(user_input=user_input, history=history, filters=[f"{npc}_{player_id}"], top_k=3)
-    )
-    knowledge_context = character_knowledge_context + player_knowledge_context
-
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
-
     awareness_injection = ""
     for attr, value in generate_params["awareness"].items():
         awareness_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<awareness_injection>", awareness_injection)
-    needs_injection = "Your following needs must be satisfied:\n"
+    needs_injection = ""
     for attr, value in generate_params["wants"].items():
         needs_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
-    extra_context_injection = ""
+    extra_context_injection = f"Current mood: You feel {emotion}.\n"
     for attr, value in generate_params["extra_context"].items():
         extra_context_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
@@ -231,6 +267,7 @@ async def mode_chat_any(websocket, body):
     last_sentence_index = 0
     message_num = 0
     character_sentences = []
+    new_history = []
     async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
@@ -254,6 +291,7 @@ async def mode_chat_any(websocket, body):
 
             last_sentence_index = generate_params['tts_last_sentence_index']
 
+        new_history = a
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
@@ -262,7 +300,7 @@ async def mode_chat_any(websocket, body):
         message_num += 1
 
     character_intents = await asyncio.gather(
-        *[check_intent(character_sentence, generate_params['character_intents'])
+        *[check_intent(character_sentence, generate_params['character_intents'], 0.7)
           for character_sentence in character_sentences]
     )
     character_intents = reduce(lambda x, y: x + y, character_intents, [])
@@ -272,8 +310,12 @@ async def mode_chat_any(websocket, body):
             'event': 'intent_triggered',
             'message_num': message_num,
             'triggered_intents': character_intents,
+            'history': new_history
         }))
         message_num += 1
+
+    response = await log_response(player_id, generate_params, new_history["internal"])
+    logger.info(response)
 
     await websocket.send(json.dumps({
         'event': 'stream_end',
@@ -288,7 +330,7 @@ async def _handle_chat_stream_message(websocket, message):
         "stop_interaction": mode_stop_interaction,
         "chat": mode_chat_any,
         "chat-instruct": mode_chat_any,
-        "verbatim": mode_chat_any,
+        "verbatim": mode_verbatim,
         "instruct": mode_chat_any,
     }
 
@@ -428,7 +470,7 @@ async def say_verbatim(websocket, user_input, state):
     }))
 
 
-async def check_intent(phrase, intents):
+async def check_intent(phrase, intents, threshold = 0.8):
     # user_input is empty
     if not phrase or not intents:
         return []
@@ -440,5 +482,53 @@ async def check_intent(phrase, intents):
     results = await asyncio.gather(*tasks)
     intents_scores = {intent['id']: result for intent, result in zip(intents, results)}
 
-    triggerred_intents = [intent_id for intent_id, intent_score in intents_scores.items() if intent_score > 0.8]
+    for intent_id, intent_score in intents_scores.items():
+        logger.info(f'Score for {intent_id}: {intent_score}')
+
+    triggerred_intents = [intent_id for intent_id, intent_score in intents_scores.items() if intent_score > threshold]
     return triggerred_intents
+
+
+async def log_response(player_id, state, new_history):
+    player_name = state["name1"]
+    npc_name = state["name2"]
+    messages = []
+    relevant_history = state["relevant_history"]
+    truncated_history = new_history[-state["max_history_len"]:]
+    for player_message, npc_message in relevant_history:
+        if player_message != "":
+            messages.append(f"{player_name}: {player_message}")
+        if npc_message != "":
+            messages.append(f"{npc_name}: {npc_message}")
+    messages.append("...")
+    for player_message, npc_message in truncated_history:
+        messages.append(f"{player_name}: {player_message}")
+        messages.append(f"{npc_name}: {npc_message}")
+
+    endpoint = DreamiaAPI.base_url + "/log"
+    client = httpx.AsyncClient()
+    response = await client.post(endpoint, json={
+        "player_id": player_id,
+        "context": state["context"],
+        "messages": messages
+    })
+    await client.aclose()
+    return response
+
+
+async def get_relevant_history(query: str, history: list[list[str]], threshold=0.55):
+    messages = [msg for pair in history for msg in pair]
+    similarities = await intent_script.calculate_similarity(query, messages)
+
+    # Filter out irrelevant messages and construct the relevant history directly
+    relevant_history = []
+    for (i, (player_msg, npc_msg)) in enumerate(history):
+        relevant_pair = ["", ""]
+        if similarities[2 * i] > threshold:  # Check similarity for player_message
+            relevant_pair[0] = player_msg
+        if similarities[2 * i + 1] > threshold:  # Check similarity for npc_message
+            relevant_pair[1] = npc_msg
+        if relevant_pair != ["", ""]:  # Only add if there's at least one relevant message
+            relevant_history.append(relevant_pair)
+
+    return relevant_history
