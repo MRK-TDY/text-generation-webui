@@ -498,33 +498,48 @@ async def classify_emotion_pre(state, user_input):
     history += f"{player_name}: {user_input}\n"
 
     prompt = f"""
-<|im_start|>user
+<|start_header_id|>user<|end_header_id|>
 Which emotion should {character_name} feel when responding to {player_name} in the following conversation?
 Choices: happy, excited, surprised, sad, bored, disappointed, confused
 
 Conversation:
-{history}<|im_end|>
-<|im_start|>assistant
+{history}<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 """
     grammar = {
         "type": "regex",
         "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
     }
+    logger.info(prompt)
 
     response = await guidance(state, prompt, grammar)
     return response
 
 
-async def classify_emotion_post(state, sentence):
+async def classify_emotion_post(state, sentence, last_round):
+    player_name = state.get('name1', 'Player')
+    character_name = state.get('name2', 'NPC')
+
+    context = ""
+    if last_round[0] != "":
+        context += f"{player_name}: {last_round[0]}\n"
+    if last_round[1] != "":
+        context += f"{character_name}: {last_round[1]}\n"
+
     prompt = f"""
-<|im_start|>user
-What is the emotion of the following sentence in the context of a dialogue.
+<|start_header_id|>user<|end_header_id|>
+What is the emotion of the following sentence in the context of the following dialogue.
 Choices: happy, excited, surprised, sad, bored, disappointed, confused
 
-Sentence:
-{sentence}<|im_end|>
-<|im_start|>assistant
+Context:
+{context}
+
+Sentence to classify:
+{sentence}<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 """
+
+
     grammar = {
         "type": "regex",
         "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"

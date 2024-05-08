@@ -195,11 +195,13 @@ async def mode_chat_any(websocket, body):
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
             km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=7,
+                                  score_threshold=0.35),
             km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
         )
     )
-    emotion = generate_params.get("emotion", emotion)
+    game_emotion = generate_params.get("emotion", "none")
+    emotion = game_emotion if game_emotion != "none" else emotion
     emotion = validate_emotion(emotion)
     generate_params["relevant_history"] = relevant_history
     knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
@@ -288,7 +290,7 @@ async def mode_chat_any(websocket, body):
             character_sentence = character_sentence.replace("\n", "")
             # replace anything between <audio scr=""></audio>
             character_sentence = re.sub(r'<audio src=".*?></audio>', '', character_sentence)
-            emotion = await classify_emotion_post(generate_params, character_sentence)
+            emotion = await classify_emotion_post(generate_params, character_sentence, a["internal"][-1])
             character_sentences.append(character_sentence)
 
             last_sentence_index = generate_params['tts_last_sentence_index']
@@ -521,7 +523,15 @@ async def log_response(player_id, state, new_history):
 
 async def get_relevant_history(query: str, history: list[list[str]], threshold=0.55):
     messages = [msg for pair in history for msg in pair]
-    similarities = await intent_script.calculate_similarity(query, messages)
+    similarities = [0 for _ in messages]
+
+    non_empty_messages = [msg for msg in messages if msg != ""]
+    non_empty_indices = [idx for idx, msg in enumerate(messages) if msg != ""]
+
+    if non_empty_messages:
+        calc_similarities = await intent_script.calculate_similarity(query, non_empty_messages)
+        for idx, similarity in zip(non_empty_indices, calc_similarities):
+            similarities[idx] = similarity
 
     # Filter out irrelevant messages and construct the relevant history directly
     relevant_history = []
