@@ -195,7 +195,8 @@ async def mode_chat_any(websocket, body):
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
             km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=5),
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=7,
+                                  score_threshold=0.35),
             km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
         )
     )
