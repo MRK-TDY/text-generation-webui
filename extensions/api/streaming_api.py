@@ -195,7 +195,7 @@ async def mode_chat_any(websocket, body):
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
             km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=7,
+            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=10,
                                   score_threshold=0.35),
             km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
         )
@@ -204,6 +204,10 @@ async def mode_chat_any(websocket, body):
     emotion = game_emotion if game_emotion != "none" else emotion
     emotion = validate_emotion(emotion)
     generate_params["relevant_history"] = relevant_history
+
+    world_knowledge_context = "\n### World Knowledge" + world_knowledge_context + "###\n"
+    character_knowledge_context = "\n### Character Background" + character_knowledge_context + "###\n"
+    player_knowledge_context = "\n### Memories with Player" + player_knowledge_context + "###\n"
     knowledge_context = world_knowledge_context + character_knowledge_context + player_knowledge_context
 
     if len(triggered_intents) > 0:
@@ -246,7 +250,6 @@ async def mode_chat_any(websocket, body):
         })
         do_sentence_check = True
 
-    generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
     awareness_injection = ""
     for attr, value in generate_params["awareness"].items():
@@ -260,6 +263,7 @@ async def mode_chat_any(websocket, body):
     for attr, value in generate_params["extra_context"].items():
         extra_context_injection += value + "\n"
     generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
+    generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
 
     # text-generation-webui reply
     # generator = generate_chat_reply(
@@ -304,9 +308,10 @@ async def mode_chat_any(websocket, body):
         }))
         message_num += 1
 
+    character_intent_queries = [f"{user_input}\n{character_sentence}" for character_sentence in character_sentences]
     character_intents = await asyncio.gather(
-        *[check_intent(character_sentence, generate_params['character_intents'], 0.7)
-          for character_sentence in character_sentences]
+        *[check_intent(character_intent_query, generate_params['character_intents'], 0.7)
+          for character_intent_query in character_intent_queries]
     )
     character_intents = reduce(lambda x, y: x + y, character_intents, [])
     if len(character_intents) > 0:
