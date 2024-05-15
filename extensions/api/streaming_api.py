@@ -251,17 +251,21 @@ async def mode_chat_any(websocket, body):
         do_sentence_check = True
 
     generate_params["context"] = generate_params["context"].replace("<knowledge_injection>", knowledge_context)
-    awareness_injection = ""
+    awareness_injection = "### Awareness\n"
     for attr, value in generate_params["awareness"].items():
         awareness_injection += value + "\n"
+    awareness_injection += "###\n"
     generate_params["context"] = generate_params["context"].replace("<awareness_injection>", awareness_injection)
-    needs_injection = ""
+    needs_injection = "### Needs\n"
     for attr, value in generate_params["wants"].items():
         needs_injection += value + "\n"
+    needs_injection += "###\n"
     generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
-    extra_context_injection = f"Current mood: You feel {emotion}.\n"
+    extra_context_injection = f"### Extra Context\n"
+    extra_context_injection += f"Current mood: You feel {emotion}.\n"
     for attr, value in generate_params["extra_context"].items():
         extra_context_injection += value + "\n"
+    extra_context_injection += "###\n"
     generate_params["context"] = generate_params["context"].replace("<extra_context_injection>", extra_context_injection)
     generate_params["context"] = generate_params["context"].replace("\r\n", "\n")
 
