@@ -73,8 +73,6 @@ async def _handle_stream_message(websocket, message):
         'message_num': message_num
     }))
 
-modes = ['chat', 'chat-instruct', 'instruct', 'verbatim', 'start_interaction', 'stop_interaction', 'start_session']
-
 
 async def mode_start_session(websocket, body):
     # check generate_params['player_id'] for the key to identify the player.
@@ -194,10 +192,12 @@ async def mode_chat_any(websocket, body):
             classify_emotion_pre(generate_params, user_input),
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=10,
-                                  score_threshold=0.35),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=["world", f"world_{player_id}_memory_fragment"], top_k=8),
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=[npc, f"{npc}_{player_id}_memory_fragment"], top_k=15, score_threshold=0.35),
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=[f"{npc}_{player_id}"], top_k=3)
         )
     )
     game_emotion = generate_params.get("emotion", "none")
@@ -337,6 +337,40 @@ async def mode_chat_any(websocket, body):
     }))
 
 
+async def mode_add_memory_fragment(websocket, body):
+    player_id = body.get('player_id', '')
+    player = body.get("name1")
+    npc = body.get("name2")
+    memory_fragments = body.get("memory_fragments", [])
+    entries = []
+    for memory_fragment in memory_fragments:
+        text = memory_fragment["text"]
+        # fragment types: npc, world
+        fragment_type = memory_fragment["type"]
+        if fragment_type == "world":
+            prefix = "world"
+        else:
+            prefix = npc
+
+        filter_key = f"{prefix}_{player_id}_memory_fragment"
+
+        entry = {
+            "text": text,
+            "payload": {
+                "filter_key": filter_key
+            },
+            "summarize": False
+        }
+        entries.append(entry)
+
+    await km_script.add_memory(entries)
+
+    await websocket.send(json.dumps({
+        'event': 'stream_add_memory_fragment',
+        'message_num': 0
+    }))
+
+
 async def _handle_chat_stream_message(websocket, message):
     MODE_MAP = {
         "start_session": mode_start_session,
@@ -346,6 +380,7 @@ async def _handle_chat_stream_message(websocket, message):
         "chat-instruct": mode_chat_any,
         "verbatim": mode_verbatim,
         "instruct": mode_chat_any,
+        "add_memory_fragment": mode_add_memory_fragment
     }
 
     try:
@@ -354,7 +389,7 @@ async def _handle_chat_stream_message(websocket, message):
         generate_params = build_parameters(body, chat=True)
 
         mode = generate_params.get('mode', '')
-        if mode not in modes:
+        if mode not in MODE_MAP.keys():
             mode = "chat-instruct"
 
         await MODE_MAP[mode](websocket, body)

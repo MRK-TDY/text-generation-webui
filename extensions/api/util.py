@@ -87,6 +87,8 @@ def build_parameters(body, chat=False):
         'awareness': body.get('awareness', {}),
         'wants': body.get('wants', {}),
         'extra_context': body.get('extra_context', {}),
+
+        'memory_fragments': body.get('memory_fragments', []),
     }
 
     preset_name = body.get('preset', 'None')

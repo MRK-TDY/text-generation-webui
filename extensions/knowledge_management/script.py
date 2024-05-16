@@ -31,7 +31,7 @@ async def get_context(user_input: str, history: list, filters: list, top_k: int 
 
     if len(results) == 0:
         return "\n"
-    results = [f'Chunk {i+1}: {result}' for i, result in enumerate(results)]
+    results = [f'Chunk: {result}' for i, result in enumerate(results)]
     results = "\n".join(results)
     context = f"\n{results}\n"
     return context
