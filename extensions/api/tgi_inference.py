@@ -510,43 +510,50 @@ Conversation:
         "type": "regex",
         "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
     }
-    logger.info(prompt)
 
     response = await guidance(state, prompt, grammar)
     return response
 
 
-async def classify_emotion_post(state, sentence, last_round):
-    player_name = state.get('name1', 'Player')
-    character_name = state.get('name2', 'NPC')
+async def classify_emotion_post(sentence):
+#     player_name = state.get('name1', 'Player')
+#     character_name = state.get('name2', 'NPC')
+#
+#     context = ""
+#     if last_round[0] != "":
+#         context += f"{player_name}: {last_round[0]}\n"
+#     if last_round[1] != "":
+#         context += f"{character_name}: {last_round[1]}\n"
+#
+#     prompt = f"""
+# <|start_header_id|>user<|end_header_id|>
+# What is the emotion of the following sentence in the context of the following dialogue.
+# Choices: happy, excited, surprised, sad, bored, disappointed, confused
+#
+# Context:
+# {context}
+#
+# Sentence to classify:
+# {sentence}<|eot_id|>
+# <|start_header_id|>assistant<|end_header_id|>
+# """
+#
+#
+#     grammar = {
+#         "type": "regex",
+#         "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
+#     }
+#
+#     response = await guidance(state, prompt, grammar)
+#     return response
 
-    context = ""
-    if last_round[0] != "":
-        context += f"{player_name}: {last_round[0]}\n"
-    if last_round[1] != "":
-        context += f"{character_name}: {last_round[1]}\n"
-
-    prompt = f"""
-<|start_header_id|>user<|end_header_id|>
-What is the emotion of the following sentence in the context of the following dialogue.
-Choices: happy, excited, surprised, sad, bored, disappointed, confused
-
-Context:
-{context}
-
-Sentence to classify:
-{sentence}<|eot_id|>
-<|start_header_id|>assistant<|end_header_id|>
-"""
-
-
-    grammar = {
-        "type": "regex",
-        "value": r"(happy|excited|surprised|sad|bored|disappointed|confused)"
-    }
-
-    response = await guidance(state, prompt, grammar)
-    return response
+    # async http request
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            TGIParams.api_url + "/emotion/classify",
+            json={"text": sentence}
+        )
+        return response.json()
 
 
 async def guidance(state, prompt, grammar):

@@ -182,7 +182,7 @@ async def mode_chat_any(websocket, body):
     flat_history = generate_params['history']['internal']
     flat_history = [message for dialogue_round in flat_history for message in dialogue_round] if len(flat_history) > 0 else []
     # Check if the user input matches any of the intents
-    (emotion,
+    (llm_emotion,
      triggered_intents,
      relevant_history,
      world_knowledge_context,
@@ -201,7 +201,7 @@ async def mode_chat_any(websocket, body):
         )
     )
     game_emotion = generate_params.get("emotion", "none")
-    emotion = game_emotion if game_emotion != "none" else emotion
+    emotion = game_emotion if game_emotion != "none" else llm_emotion
     emotion = validate_emotion(emotion)
     generate_params["relevant_history"] = relevant_history
 
@@ -279,6 +279,7 @@ async def mode_chat_any(websocket, body):
     message_num = 0
     character_sentences = []
     new_history = []
+    emotions = []
     async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
@@ -298,7 +299,10 @@ async def mode_chat_any(websocket, body):
             character_sentence = character_sentence.replace("\n", "")
             # replace anything between <audio scr=""></audio>
             character_sentence = re.sub(r'<audio src=".*?></audio>', '', character_sentence)
-            emotion = await classify_emotion_post(generate_params, character_sentence, a["internal"][-1])
+            try:
+                emotions = await classify_emotion_post(character_sentence)
+            except Exception as e:
+                emotions = []
             character_sentences.append(character_sentence)
 
             last_sentence_index = generate_params['tts_last_sentence_index']
@@ -307,7 +311,7 @@ async def mode_chat_any(websocket, body):
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
-            'emotion': emotion,
+            'emotion': emotions,
             'history': a
         }))
         message_num += 1
