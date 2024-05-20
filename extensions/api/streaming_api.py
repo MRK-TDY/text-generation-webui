@@ -73,8 +73,6 @@ async def _handle_stream_message(websocket, message):
         'message_num': message_num
     }))
 
-modes = ['chat', 'chat-instruct', 'instruct', 'verbatim', 'start_interaction', 'stop_interaction', 'start_session']
-
 
 async def mode_start_session(websocket, body):
     # check generate_params['player_id'] for the key to identify the player.
@@ -184,7 +182,7 @@ async def mode_chat_any(websocket, body):
     flat_history = generate_params['history']['internal']
     flat_history = [message for dialogue_round in flat_history for message in dialogue_round] if len(flat_history) > 0 else []
     # Check if the user input matches any of the intents
-    (emotion,
+    (llm_emotion,
      triggered_intents,
      relevant_history,
      world_knowledge_context,
@@ -194,14 +192,16 @@ async def mode_chat_any(websocket, body):
             classify_emotion_pre(generate_params, user_input),
             check_intent(user_input, generate_params['player_intents']),
             get_relevant_history(user_input, old_history),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=["world"], top_k=5),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[npc], top_k=10,
-                                  score_threshold=0.35),
-            km_script.get_context(user_input=user_input, history=flat_history, filters=[f"{npc}_{player_id}"], top_k=3)
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=["world", f"world_{player_id}_memory_fragment"], top_k=8),
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=[npc, f"{npc}_{player_id}_memory_fragment"], top_k=15, score_threshold=0.35),
+            km_script.get_context(user_input=user_input, history=flat_history,
+                                  filters=[f"{npc}_{player_id}"], top_k=3)
         )
     )
     game_emotion = generate_params.get("emotion", "none")
-    emotion = game_emotion if game_emotion != "none" else emotion
+    emotion = game_emotion if game_emotion != "none" else llm_emotion
     emotion = validate_emotion(emotion)
     generate_params["relevant_history"] = relevant_history
 
@@ -279,6 +279,7 @@ async def mode_chat_any(websocket, body):
     message_num = 0
     character_sentences = []
     new_history = []
+    emotions = []
     async for a in generator:
         for phrases in a["visible"]:
             for i, phrase in enumerate(phrases):
@@ -298,7 +299,10 @@ async def mode_chat_any(websocket, body):
             character_sentence = character_sentence.replace("\n", "")
             # replace anything between <audio scr=""></audio>
             character_sentence = re.sub(r'<audio src=".*?></audio>', '', character_sentence)
-            emotion = await classify_emotion_post(generate_params, character_sentence, a["internal"][-1])
+            try:
+                emotions = await classify_emotion_post(character_sentence)
+            except Exception as e:
+                emotions = []
             character_sentences.append(character_sentence)
 
             last_sentence_index = generate_params['tts_last_sentence_index']
@@ -307,7 +311,7 @@ async def mode_chat_any(websocket, body):
         await websocket.send(json.dumps({
             'event': 'text_stream',
             'message_num': message_num,
-            'emotion': emotion,
+            'emotion': emotions,
             'history': a
         }))
         message_num += 1
@@ -337,6 +341,40 @@ async def mode_chat_any(websocket, body):
     }))
 
 
+async def mode_add_memory_fragment(websocket, body):
+    player_id = body.get('player_id', '')
+    player = body.get("name1")
+    npc = body.get("name2")
+    memory_fragments = body.get("memory_fragments", [])
+    entries = []
+    for memory_fragment in memory_fragments:
+        text = memory_fragment["text"]
+        # fragment types: npc, world
+        fragment_type = memory_fragment["type"]
+        if fragment_type == "world":
+            prefix = "world"
+        else:
+            prefix = npc
+
+        filter_key = f"{prefix}_{player_id}_memory_fragment"
+
+        entry = {
+            "text": text,
+            "payload": {
+                "filter_key": filter_key
+            },
+            "summarize": False
+        }
+        entries.append(entry)
+
+    await km_script.add_memory(entries)
+
+    await websocket.send(json.dumps({
+        'event': 'stream_add_memory_fragment',
+        'message_num': 0
+    }))
+
+
 async def _handle_chat_stream_message(websocket, message):
     MODE_MAP = {
         "start_session": mode_start_session,
@@ -346,6 +384,7 @@ async def _handle_chat_stream_message(websocket, message):
         "chat-instruct": mode_chat_any,
         "verbatim": mode_verbatim,
         "instruct": mode_chat_any,
+        "add_memory_fragment": mode_add_memory_fragment
     }
 
     try:
@@ -354,7 +393,7 @@ async def _handle_chat_stream_message(websocket, message):
         generate_params = build_parameters(body, chat=True)
 
         mode = generate_params.get('mode', '')
-        if mode not in modes:
+        if mode not in MODE_MAP.keys():
             mode = "chat-instruct"
 
         await MODE_MAP[mode](websocket, body)
