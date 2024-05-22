@@ -197,10 +197,10 @@ async def _generate_reply(question, state, stopping_strings=None, is_chat=False,
     payload = {
         "messages": messages,
         "priorities": [
-            # {
-            #     "engine": "groq",
-            #     "llm": "llama3-70b-8192"
-            # },
+            {
+                "engine": "openai",
+                "llm": "gpt-4o"
+            },
             {
                 "engine": "tgi",
                 "max_new_tokens": state['max_new_tokens'],
