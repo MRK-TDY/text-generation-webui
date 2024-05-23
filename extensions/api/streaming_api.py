@@ -197,7 +197,7 @@ async def mode_chat_any(websocket, body):
             km_script.get_context(user_input=user_input, history=flat_history,
                                   filters=[npc, f"{npc}_{player_id}_memory_fragment"], top_k=15, score_threshold=0.35),
             km_script.get_context(user_input=user_input, history=flat_history,
-                                  filters=[f"{npc}_{player_id}"], top_k=3)
+                                  filters=[f"{npc}_{player_id}"], top_k=3, score_threshold=0.2)
         )
     )
     game_emotion = generate_params.get("emotion", "none")
