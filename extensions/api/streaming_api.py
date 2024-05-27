@@ -399,11 +399,14 @@ async def _handle_chat_stream_message(websocket, message):
         await MODE_MAP[mode](websocket, body)
         return
     except Exception as e:
-        logger.error(traceback.format_exc())
+        exception = traceback.format_exc()
+        error = str(e)
+        full_error = f"{error}\n{exception}"
+        logger.error(full_error)
         logger.error(message)
         await websocket.send(json.dumps({
             "event": "stream_end",
-            "error_message": str(e)
+            "error_message": str(full_error)
         }))
 
 
