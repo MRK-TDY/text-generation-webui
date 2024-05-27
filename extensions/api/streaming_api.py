@@ -400,6 +400,7 @@ async def _handle_chat_stream_message(websocket, message):
         return
     except Exception as e:
         logger.error(traceback.format_exc())
+        logger.error(message)
         await websocket.send(json.dumps({
             "event": "stream_end",
             "error_message": str(e)
