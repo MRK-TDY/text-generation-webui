@@ -262,7 +262,7 @@ async def mode_chat_any(websocket, body):
     needs_injection += "###\n"
     generate_params["context"] = generate_params["context"].replace("<needs_injection>", needs_injection)
     extra_context_injection = f"### Extra Context\n"
-    extra_context_injection += f"Current mood: You feel {emotion}.\n"
+    # extra_context_injection += f"Current mood: You feel {emotion}.\n"
     for attr, value in generate_params["extra_context"].items():
         extra_context_injection += value + "\n"
     extra_context_injection += "###\n"
